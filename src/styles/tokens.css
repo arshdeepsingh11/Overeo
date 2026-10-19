@@ -1,0 +1,136 @@
+/* =====================================================================
+   OVEREO design tokens — calm Rose Quartz (the original artifact palette)
+   with soft, frosted glass. Light is the default; dark is opt-in.
+   ===================================================================== */
+
+:root {
+  /* Rose Quartz — brand palette from the original prototype */
+  --ink: #29232a;
+  --plum: #58364f;
+  --mauve: #8a5a77;
+  --muted: #6b5a66;
+  --orchid: #b982a1;
+  --rose: #eaa6bc;
+  --blush: #f8dce5;
+  --blush-50: #fbeef2;
+  --champagne: #e8cba8;
+  --gold: #c9a77f;
+  --paper: #fffcfa;
+  --paper-2: #fbf6f3;
+  --brick: #9a3b2e;
+  --sage: #6f8a78;
+
+  --grad-brand: linear-gradient(120deg, #58364f 0%, #8a5a77 45%, #b982a1 100%);
+
+  /* Typography — Apple system first, brand fonts as fallback */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-hanken), "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-hanken), "Hanken Grotesk", system-ui, sans-serif;
+  --font-serif: var(--font-instrument), "Instrument Serif", "New York", ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* Geometry */
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 26px;
+  --r-xl: 32px;
+  --gutter: clamp(16px, 4vw, 48px);
+  --maxw: 1200px;
+  --dock-h: 76px;
+
+  /* Motion — gentle, Apple-like */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 160ms;
+  --t-med: 360ms;
+  --t-slow: 800ms;
+}
+
+/* ------------------------------- Light ------------------------------- */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fbf6f3;
+  --bg-2: #fffcfa;
+  --fg: #29232a;
+  --fg-2: #5f505b;
+  --fg-3: #8f7f8a;
+  --line: rgba(88, 54, 79, 0.1);
+  --line-2: rgba(88, 54, 79, 0.18);
+  --accent: #58364f;
+  --accent-2: #8a5a77;
+  --accent-fg: #fffcfa;
+  --signal: #8a5a77;
+  --good: #5e7d6a;
+  --alert: #9a3b2e;
+  --glow: 185, 130, 161;
+
+  --glass-bg: linear-gradient(150deg, rgba(255, 252, 250, 0.72), rgba(255, 252, 250, 0.48));
+  --glass-solid: rgba(255, 252, 250, 0.86);
+  --glass-thin: rgba(255, 252, 250, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-hi: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 1px 2px rgba(88, 54, 79, 0.05), 0 12px 32px -14px rgba(88, 54, 79, 0.18);
+  --glass-blur: 18px;
+  --chart-grid: rgba(88, 54, 79, 0.08);
+
+  --wash-1: #f8dce5;
+  --wash-2: #f3e4d3;
+  --wash-3: #ebd9e2;
+  --spec: rgba(255, 255, 255, 0.55);
+  --grad-rim: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(234, 166, 188, 0.35) 45%, rgba(232, 203, 168, 0.35) 80%, rgba(255, 255, 255, 0.6));
+}
+
+/* -------------------------------- Dark ------------------------------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171217;
+  --bg-2: #1e171e;
+  --fg: #f2e8eb;
+  --fg-2: rgba(242, 232, 235, 0.72);
+  --fg-3: rgba(242, 232, 235, 0.48);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --accent: #eaa6bc;
+  --accent-2: #b982a1;
+  --accent-fg: #29232a;
+  --signal: #d9a3bb;
+  --good: #9cc2aa;
+  --alert: #e59b8d;
+  --glow: 185, 130, 161;
+
+  --glass-bg: linear-gradient(150deg, rgba(58, 42, 56, 0.6), rgba(30, 23, 30, 0.5));
+  --glass-solid: rgba(32, 24, 32, 0.9);
+  --glass-thin: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-hi: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 40px -18px rgba(0, 0, 0, 0.6);
+  --glass-blur: 22px;
+  --chart-grid: rgba(255, 255, 255, 0.07);
+
+  --wash-1: #3a2636;
+  --wash-2: #2f2430;
+  --wash-3: #2a1f2a;
+  --spec: rgba(255, 220, 235, 0.08);
+  --grad-rim: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(234, 166, 188, 0.18) 50%, rgba(255, 255, 255, 0.06));
+}
+
+/* ------------------- Mood lighting (subtle tint only) ------------------- */
+[data-theme="light"][data-mood="focus"] {
+  --wash-1: #ece0ec;
+  --wash-2: #e6e3f1;
+}
+[data-theme="light"][data-mood="energize"] {
+  --wash-1: #f9d9e3;
+  --wash-2: #f6e2cb;
+}
+[data-theme="light"][data-mood="night"] {
+  --wash-1: #e9dce4;
+  --wash-2: #e7e0e6;
+}
+[data-theme="dark"][data-mood="energize"] {
+  --wash-1: #46283c;
+}
+[data-theme="dark"][data-mood="night"] {
+  --wash-1: #2a1f2a;
+  --wash-2: #221a22;
+}
