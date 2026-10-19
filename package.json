@@ -1,0 +1,32 @@
+{
+  "name": "overeo",
+  "version": "0.2.0",
+  "private": true,
+  "description": "OVEREO — women's precision health. Next.js frontend with Overeo SI (press O).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "si-proxy": "node server/si-proxy.mjs"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.1",
+    "gsap": "^3.13.0",
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "^3.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.180.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}
