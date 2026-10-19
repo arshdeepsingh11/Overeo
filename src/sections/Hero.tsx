@@ -6,6 +6,7 @@ import { Marquee3D, type MarqueeIcon } from "../fx/Marquee3D";
 import { MorphingText, ShineBorder, CircularProgress } from "../ui/Motion";
 import { Tilt, Magnetic } from "../ui/Controls";
 import { Icon } from "../ui/Icon";
+import { Wordmark } from "../ui/Logo";
 import { VideoSlot } from "../ui/VideoSlot";
 import { openSI } from "../core/store";
 import { useDerived } from "../core/derived";
@@ -51,11 +52,8 @@ export function Hero() {
       <div className="hero-dots" aria-hidden="true" />
       <div className="hero-dots spot" aria-hidden="true" />
       <div className="wrap hero-brand">
-        <span className="wordmark">
-          <span className="wm-mark" aria-hidden="true" />
-          OVEREO
-        </span>
-        <span className="badge">Prototype · sample data</span>
+        <Wordmark />
+        <span className="badge byline">Overeo by BioAro</span>
       </div>
       <div className="wrap hero-grid">
         <div className="hero-copy">

@@ -22,6 +22,10 @@
 
   --grad-brand: linear-gradient(120deg, #58364f 0%, #8a5a77 45%, #b982a1 100%);
 
+  /* Logo mark */
+  --logo-a: #9a6788;
+  --logo-b: #58364f;
+
   /* Typography — Apple system first, brand fonts as fallback */
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-hanken), "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-hanken), "Hanken Grotesk", system-ui, sans-serif;
@@ -83,6 +87,8 @@
 /* -------------------------------- Dark ------------------------------- */
 [data-theme="dark"] {
   color-scheme: dark;
+  --logo-a: #f2c3d3;
+  --logo-b: #b982a1;
   --bg: #171217;
   --bg-2: #1e171e;
   --fg: #f2e8eb;

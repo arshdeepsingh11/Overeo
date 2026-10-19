@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { TypewriterInput } from "../ui/Controls";
 import { ShineBorder } from "../ui/Motion";
 import { Icon } from "../ui/Icon";
+import { Wordmark } from "../ui/Logo";
 import { FACTS, MENSTRUAL_FACT, OVARY_FACT } from "../core/research";
 import { openSI, useStore } from "../core/store";
 import { tick, chime } from "../lib/audio";
@@ -155,9 +156,7 @@ export function Footer() {
     <footer className="footer">
       <div className="wrap">
         <div className="footer-top">
-          <div className="wordmark big">
-            <span className="wm-mark" /> OVEREO
-          </div>
+          <Wordmark big />
           <p className="muted small" style={{ maxWidth: 420 }}>
             Your body. Your biology. Your future. A women's precision-health platform in development, built on BioAro's laboratory capabilities and NEYU's care.
           </p>
