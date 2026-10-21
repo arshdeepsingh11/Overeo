@@ -73,7 +73,7 @@ export function Hero() {
             Women's health, <MorphingText words={["understood.", "predicted.", "connected.", "yours."]} />
           </p>
           <p className="lede">
-            One intelligence that reads her cycle, labs, genome and wearables together — notices what medicine has missed for decades — and routes her to the right person.
+            One intelligence that reads her cycle, symptoms, labs and genome together — notices what medicine has missed for decades — and routes her to the right person.
           </p>
           <div className="hero-ctas">
             <Magnetic>
@@ -142,7 +142,7 @@ export function Hero() {
 
       <div className="hero-marquee">
         <Marquee3D icons={ICONS} />
-        <p className="faint small center">Fourteen streams, read together. Hover to focus · click to ask SI.</p>
+        <p className="faint small center">Fourteen streams, read together. Tap any one to ask SI.</p>
       </div>
       <div className="wrap film-wrap" id="film">
         <VideoSlot src="/videos/overeo-brand-film.mp4" poster="/videos/overeo-brand-film.jpg" title="The OVEREO brand film" kicker="Brand film" />
