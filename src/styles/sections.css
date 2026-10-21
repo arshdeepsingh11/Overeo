@@ -518,10 +518,6 @@ mark.hl::before {
     align-content: end;
     padding-bottom: 28px;
   }
-  .conv-list,
-  .conv-explain {
-    display: none;
-  }
   .conv-label {
     padding: 4px 8px;
   }
@@ -1836,14 +1832,14 @@ mark.hl::before {
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-weight: 700;
   letter-spacing: 0.24em;
-  font-size: 18px;
+  font-size: 20px;
   color: var(--fg);
 }
 .wordmark.big {
-  font-size: 22px;
+  font-size: 24px;
 }
 .wm-logo {
   flex: none;
@@ -2012,4 +2008,602 @@ mark.hl::before {
   letter-spacing: 0.01em;
   font-size: 12.5px;
   font-weight: 600;
+}
+
+/* ---------------- Convergence: stream chips + live reading panel ------- */
+.converge-copy > * {
+  max-width: 430px;
+}
+.conv-title {
+  font-size: clamp(34px, 4.2vw, 54px);
+}
+.conv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.conv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 560;
+  color: var(--fg-3);
+  background: var(--glass-thin);
+  border: 1px solid var(--glass-border);
+  transition:
+    color var(--t-med),
+    background var(--t-med),
+    box-shadow var(--t-med),
+    transform var(--t-fast) var(--ease-out);
+}
+.conv-chip:active {
+  transform: scale(0.96);
+}
+.conv-chip.on {
+  color: var(--fg-2);
+}
+.conv-chip.on .conv-dot {
+  background: var(--signal);
+  box-shadow: 0 0 10px var(--signal);
+}
+.conv-chip.sel {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent-2) 14%, var(--glass-solid));
+  box-shadow: 0 0 0 2px rgba(var(--glow), 0.45);
+}
+.conv-chip.pin::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+.conv-read {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 24px;
+  overflow: hidden;
+  animation: readIn 520ms var(--ease-spring) both;
+}
+@keyframes readIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    filter: blur(6px);
+  }
+}
+.conv-read::before {
+  /* a soft wash in the stream's own hue */
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsl(var(--h) 60% 75% / 0.28), transparent 70%);
+  pointer-events: none;
+}
+.conv-read p {
+  margin: 0;
+}
+.conv-read-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.conv-read-t {
+  display: grid;
+  min-width: 0;
+}
+.conv-read-t b {
+  font-size: 16px;
+}
+.conv-read-t .small {
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+.conv-viz {
+  position: relative;
+  min-height: 72px;
+}
+.conv-typed {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.conv-typed span {
+  animation: wordIn 380ms var(--ease-out) both;
+}
+@keyframes wordIn {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+.conv-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.conv-link-row .chip {
+  font-size: 12px;
+}
+.conv-why {
+  line-height: 1.45;
+}
+.conv-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.conv-nav {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.conv-step {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-thin);
+}
+.conv-timer {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--grad-brand);
+  transform-origin: left;
+  transform: scaleX(0);
+  opacity: 0;
+}
+.conv-timer.run {
+  opacity: 0.8;
+  animation: convTimer linear both;
+}
+@keyframes convTimer {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.conv-pin {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  opacity: 0;
+}
+.conv-read:hover .conv-pin,
+.conv-pin:focus-visible {
+  opacity: 1;
+}
+.conv-label {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* mini charts */
+.sviz {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.sviz-t {
+  font-size: 9.5px;
+  fill: var(--fg-3);
+  font-family: inherit;
+}
+.sviz-band {
+  fill: hsl(var(--h) 40% 70% / 0.14);
+}
+.sviz-band.warn {
+  fill: rgba(214, 120, 120, 0.12);
+}
+.sviz-bar {
+  fill: hsl(var(--h) 32% 62%);
+}
+.sviz-bar.hot {
+  fill: hsl(var(--h) 48% 52%);
+}
+.sviz-mean {
+  stroke: var(--fg-3);
+  stroke-dasharray: 3 4;
+  stroke-width: 1;
+  opacity: 0.6;
+}
+.sviz-mark {
+  stroke: var(--accent-2);
+  stroke-dasharray: 2 3;
+  stroke-width: 1.2;
+}
+.sviz-line {
+  fill: none;
+  stroke: hsl(var(--h) 45% 55%);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sviz-dot {
+  fill: var(--bg);
+  stroke: hsl(var(--h) 45% 50%);
+  stroke-width: 2.4;
+}
+.sviz-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: svDraw 1.1s var(--ease-out) forwards;
+}
+@keyframes svDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.sviz-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: svGrow 600ms var(--ease-spring) both;
+}
+@keyframes svGrow {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+}
+.sviz-rows {
+  display: grid;
+  gap: 6px;
+}
+.sviz-row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  background: var(--glass-thin);
+  border: 1px solid var(--glass-border);
+  animation: readIn 420ms var(--ease-out) both;
+}
+.sviz-row:nth-child(2) {
+  animation-delay: 80ms;
+}
+.sviz-row:nth-child(3) {
+  animation-delay: 160ms;
+}
+.sviz-row.note {
+  grid-template-columns: 52px 1fr;
+}
+[data-theme="dark"] .sviz-line {
+  stroke: hsl(var(--h) 60% 76%);
+}
+[data-theme="dark"] .sviz-bar {
+  fill: hsl(var(--h) 38% 66%);
+}
+
+/* shorter laptop screens: keep the pinned scene within one viewport */
+@media (min-width: 768px) and (max-height: 860px) {
+  .conv-why {
+    display: none;
+  }
+  .conv-title {
+    font-size: clamp(30px, 3.4vw, 42px);
+  }
+}
+@media (min-width: 768px) and (max-height: 740px) {
+  .conv-links {
+    display: none;
+  }
+}
+
+/* phones: copy and panel first, then the scene */
+@media (max-width: 767px) {
+  .converge-copy > * {
+    max-width: none;
+  }
+  .conv-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -16px;
+    padding: 4px 16px;
+  }
+  .conv-chip {
+    flex: none;
+  }
+}
+
+/* ------------------------ BioAro Labs × OVEREO showcase ----------------- */
+.ls-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.ls-lens {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 36px);
+  padding: clamp(14px, 1.6vw, 20px);
+  border-radius: 32px;
+  animation: readIn 600ms var(--ease-spring) both;
+}
+.ls-media {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: 320px;
+  isolation: isolate;
+  background: linear-gradient(150deg, #f3e3ec, #e8d6e6);
+}
+.ls-hero {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: lsZoom 9s ease-out both;
+}
+.ls-hero.is-icon {
+  object-fit: contain;
+  padding: 18%;
+}
+@keyframes lsZoom {
+  from {
+    transform: scale(1.08);
+    filter: blur(6px) saturate(1.1);
+  }
+  15% {
+    filter: none;
+  }
+}
+.ls-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(41, 28, 40, 0.45)),
+    radial-gradient(120% 80% at 0% 0%, rgba(var(--glow), 0.18), transparent 60%);
+  pointer-events: none;
+}
+/* a holographic scan that sweeps once each time a test comes into the lens */
+.ls-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 0, rgba(255, 255, 255, 0.55) 48%, rgba(var(--glow), 0.35) 50%, transparent 52%);
+  background-size: 100% 260%;
+  mix-blend-mode: soft-light;
+  animation: lsScan 1.6s var(--ease-out) both;
+  pointer-events: none;
+}
+@keyframes lsScan {
+  from {
+    background-position: 0 100%;
+  }
+  to {
+    background-position: 0 -60%;
+  }
+}
+.ls-media-tags {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ls-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.ls-info {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 6px 4px 4px 0;
+}
+.ls-name {
+  margin: 0;
+}
+.ls-tagline {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 560;
+  color: var(--fg);
+}
+.ls-learn {
+  margin: 0;
+  color: var(--fg-2);
+  line-height: 1.55;
+}
+.ls-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.ls-facts div {
+  padding: 9px 11px;
+  border-radius: 14px;
+  background: var(--glass-thin);
+  border: 1px solid var(--glass-border);
+}
+.ls-facts dt {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.ls-facts dd {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  font-weight: 560;
+}
+.ls-for {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background:
+    linear-gradient(120deg, rgba(var(--glow), 0.16), transparent 70%),
+    var(--glass-thin);
+  border: 1px solid var(--glass-border);
+}
+.ls-for p {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.ls-for .faint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ls-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ls-rail {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 6px 2px 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+.ls-tile {
+  flex: 0 0 210px;
+  display: grid;
+  grid-template-rows: 112px auto;
+  border-radius: 20px;
+  overflow: hidden;
+  text-align: left;
+  scroll-snap-align: start;
+  transition:
+    transform var(--t-med) var(--ease-spring),
+    box-shadow var(--t-med);
+  animation: readIn 500ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+.ls-tile:hover {
+  transform: translateY(-3px);
+}
+.ls-tile.on {
+  box-shadow:
+    0 0 0 2px rgba(var(--glow), 0.6),
+    var(--glass-shadow);
+}
+.ls-tile-img {
+  width: 100%;
+  height: 112px;
+  object-fit: cover;
+  background: linear-gradient(150deg, #f3e3ec, #e8d6e6);
+}
+.ls-tile-img.is-icon {
+  object-fit: contain;
+  padding: 18px;
+}
+.ls-img-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(60% 80% at 30% 30%, rgba(var(--glow), 0.5), transparent),
+    linear-gradient(150deg, #f3e3ec, #e3cfe0);
+}
+.ls-tile-body {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px 12px;
+}
+.ls-tile-body b {
+  font-size: 14px;
+  line-height: 1.25;
+}
+.ls-tile-body .badge {
+  justify-self: start;
+  font-size: 10.5px;
+}
+.ls-foot {
+  margin: 10px 0 0;
+  max-width: 760px;
+  line-height: 1.5;
+}
+[data-theme="dark"] .ls-media,
+[data-theme="dark"] .ls-tile-img,
+[data-theme="dark"] .ls-img-fallback {
+  background: linear-gradient(150deg, #3a2a38, #2a1f2a);
+}
+@media (max-width: 900px) {
+  .ls-lens {
+    grid-template-columns: 1fr;
+  }
+  .ls-media {
+    min-height: 0;
+    aspect-ratio: 1140 / 720;
+  }
+}
+@media (max-width: 760px) {
+  .ls-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -16px;
+    padding: 2px 16px;
+  }
+  .ls-filters .chip {
+    flex: none;
+  }
+  .ls-lens {
+    border-radius: 26px;
+  }
+  .ls-tile {
+    flex-basis: 170px;
+  }
+  .ls-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-scan,
+  .ls-hero {
+    animation: none;
+  }
+}
+
+/* desktop: keep the reading panel clear of the floating dock */
+@media (min-width: 768px) {
+  .converge-copy {
+    padding-block: 72px 104px;
+    gap: 14px;
+  }
 }

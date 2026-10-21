@@ -2183,3 +2183,202 @@ html.mode-lock {
     gap: 6px;
   }
 }
+
+/* ---------------------- Marquee info card (hover / tap) ---------------- */
+.mq-wrap {
+  position: relative;
+}
+.mq-item.on .mq-icon {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.2),
+    0 2px 0 hsl(calc(var(--h) - 25) 16% 28%),
+    0 6px 0 hsl(calc(var(--h) - 25) 16% 22%),
+    0 0 0 7px rgba(var(--glow), 0.45),
+    0 0 40px 6px rgba(var(--glow), 0.35);
+}
+.mq-wrap.has-pop .mq-item .mq-label {
+  opacity: 0;
+}
+.mq-wrap.has-pop .mq-item.on .mq-label {
+  opacity: 1;
+}
+.mq-pop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  width: min(380px, calc(100% - 16px));
+  padding: 16px 16px 14px;
+  border-radius: 22px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  translate: 0 8px;
+  transition:
+    opacity 220ms var(--ease-out),
+    translate 320ms var(--ease-spring),
+    visibility 0s 220ms;
+  box-shadow:
+    0 30px 60px -24px rgba(41, 35, 42, 0.45),
+    0 0 0 1px var(--glass-border);
+}
+.mq-pop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  translate: 0 0;
+  transition:
+    opacity 220ms var(--ease-out),
+    translate 320ms var(--ease-spring);
+}
+/* the little pointer up to the icon */
+.mq-pop::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: calc(var(--ax, 50%) - 7px);
+  width: 14px;
+  height: 14px;
+  rotate: 45deg;
+  background: inherit;
+  border-left: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: inherit;
+  backdrop-filter: inherit;
+}
+.spop {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+.spop p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.spop-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.spop-head b {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.spop-ic {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(155deg, hsl(var(--h) 29% 70%), hsl(calc(var(--h) - 25) 20% 40%));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.spop-val {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  color: var(--fg);
+}
+.spop-x {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--fg-3);
+}
+.spop-x:hover {
+  background: var(--glass-thin);
+  color: var(--fg);
+}
+.spop-what {
+  color: var(--fg-2);
+}
+.spop-k {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 4px;
+}
+.spop-k .badge {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10.5px;
+  padding: 2px 7px;
+}
+.spop-read {
+  position: relative;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background:
+    linear-gradient(120deg, rgba(var(--glow), 0.16), transparent 60%),
+    var(--glass-thin);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+/* a slow scan line — SI is reading */
+.spop-read::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -40%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: spopScan 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes spopScan {
+  to {
+    left: 120%;
+  }
+}
+.spop-why p {
+  color: var(--fg-2);
+}
+.spop-src {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--accent-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--accent-2) 40%, transparent);
+}
+span.spop-src {
+  text-decoration: none;
+  color: var(--fg-3);
+}
+.spop-in {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.spop-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spop-read::after {
+    display: none;
+  }
+}
+/* the 3D track plane sits in front of icons pushed back in z — let pointers through to the icons */
+.mq-track {
+  pointer-events: none;
+}
+.mq-item {
+  pointer-events: auto;
+}
