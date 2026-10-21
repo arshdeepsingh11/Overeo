@@ -38,7 +38,7 @@ export function LogoMark({ size = 24, className, title }: { size?: number; class
 export function Wordmark({ big = false }: { big?: boolean }) {
   return (
     <span className={`wordmark ${big ? "big" : ""}`}>
-      <LogoMark size={big ? 30 : 24} className="wm-logo" />
+      <LogoMark size={big ? 40 : 34} className="wm-logo" />
       OVEREO
     </span>
   );
