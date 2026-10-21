@@ -38,16 +38,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FBF6F3" },
-    { media: "(prefers-color-scheme: dark)", color: "#171217" },
-  ],
+  // light by default, even when the phone itself is in dark mode
+  themeColor: "#FBF6F3",
 };
 
 // Runs before first paint. OVEREO is light by default (the calm Rose Quartz
 // look); dark only when the visitor chooses it. Setting the theme here keeps
 // text and background in sync from the very first frame.
-const themeScript = `try{var t=localStorage.getItem("overeo.theme");if(t!=="dark")t="light";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="light";}`;
+const themeScript = `try{var t=localStorage.getItem("overeo.theme.v2");if(t==="auto")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t!=="dark")t="light";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="light";}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

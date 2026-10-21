@@ -187,12 +187,15 @@ function shallowEqual(a: unknown, b: unknown) {
 
 /* ---------------------------- actions ---------------------------- */
 
+/** v2: light is the default for everyone; only an explicit choice switches it. */
+export const THEME_KEY = "overeo.theme.v2";
+
 /** Call once on the client after the first render. */
 export function hydrateStore() {
   if (state.hydrated) return;
   let pref: ThemePref = "light";
   try {
-    const t = localStorage.getItem("overeo.theme");
+    const t = localStorage.getItem(THEME_KEY);
     if (t === "dark" || t === "auto") pref = t;
   } catch {}
   const theme = pref === "dark" || (pref === "auto" && prefersDark()) ? "dark" : "light";
@@ -267,7 +270,7 @@ export const uid = (p = "id") => `${p}-${Date.now().toString(36)}-${(seq++).toSt
 
 export function setTheme(pref: ThemePref) {
   try {
-    localStorage.setItem("overeo.theme", pref);
+    localStorage.setItem(THEME_KEY, pref);
   } catch {}
   const theme = pref === "dark" || (pref === "auto" && prefersDark()) ? "dark" : "light";
   document.documentElement.dataset.theme = theme;
