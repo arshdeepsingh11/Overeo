@@ -18,16 +18,32 @@ export interface Source {
   value: string;
 }
 
-export function SignalConvergence({ sources, progress, onHover }: { sources: Source[]; progress: number; onHover?: (id: string | null) => void }) {
+export function SignalConvergence({
+  sources,
+  progress,
+  active = null,
+  onHover,
+  onSelect,
+}: {
+  sources: Source[];
+  progress: number;
+  /** the stream being read — highlighted until something else is hovered */
+  active?: string | null;
+  onHover?: (id: string | null) => void;
+  onSelect?: (id: string) => void;
+}) {
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<(HTMLDivElement | null)[]>([]);
   const vis = useVisible(host, "120px");
   const theme = useStore((s) => s.theme);
-  const live = useRef({ vis, progress, theme, hover: -1 });
+  const live = useRef({ vis, progress, theme, hover: -1, active: -1, onSelect });
+  live.current.active = sources.findIndex((x) => x.id === active);
+  live.current.onSelect = onSelect;
   live.current.vis = vis;
   live.current.progress = progress;
   live.current.theme = theme;
   const [hover, setHover] = useState(-1);
+  const [emph, setEmph] = useState(-1);
 
   useEffect(() => {
     const el = host.current;
@@ -184,8 +200,19 @@ export function SignalConvergence({ sources, progress, onHover }: { sources: Sou
     };
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerleave", onLeave);
+    // tap or click a node to read that stream (touch has no hover, so pick here)
+    const onClick = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      const p = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(p, camera);
+      const hit = ray.intersectObjects(streams.map((s) => s.node), false)[0];
+      if (hit) live.current.onSelect?.(sources[hit.object.userData.i as number].id);
+    };
+    el.addEventListener("click", onClick);
 
     const tmp = new THREE.Vector3();
+    const tint = new THREE.Color();
+    let shown = -2;
     let raf = 0;
     let time = 0;
     let last = performance.now();
@@ -205,7 +232,6 @@ export function SignalConvergence({ sources, progress, onHover }: { sources: Sou
       hubMat.uniforms.uC2.value.set(dark ? "#58364F" : "#FBEEF2");
       hubMat.uniforms.uCoreA.value = dark ? 0.6 : 0.8;
       coreMat.opacity = dark ? 0.9 : 0.7;
-      coreMat.color.set(dark ? "#FFE9F0" : "#F6B9CF");
       (dust.material as THREE.PointsMaterial).color.set(dark ? "#EAA6BC" : "#8A5A77");
 
       mouse.lerp(target, Math.min(1, dt * 3));
@@ -232,12 +258,21 @@ export function SignalConvergence({ sources, progress, onHover }: { sources: Sou
       }
 
       const lit = L.progress * (N + 1);
+      const emph = L.hover >= 0 ? L.hover : L.active;
+      if (emph !== shown) {
+        shown = emph;
+        setEmph(emph);
+      }
+      // the core takes on the colour of the stream it's reading
+      if (emph >= 0) tint.setHSL((330 + emph * 9) / 360, 0.45, dark ? 0.85 : 0.72);
+      else tint.set(dark ? "#FFE9F0" : "#F6B9CF");
+      coreMat.color.lerp(tint, Math.min(1, dt * 3));
       streams.forEach((s, i) => {
         const on = Math.max(0, Math.min(1, lit - i));
         s.mat.uniforms.uTime.value = time;
         s.mat.uniforms.uC.value.setHSL((330 + i * 9) / 360, dark ? 0.34 : 0.26, dark ? 0.74 : 0.52);
         s.mat.uniforms.uOn.value += (on - s.mat.uniforms.uOn.value) * Math.min(1, dt * 4);
-        s.mat.uniforms.uHover.value += ((L.hover === i ? 1 : 0) - s.mat.uniforms.uHover.value) * Math.min(1, dt * 8);
+        s.mat.uniforms.uHover.value += ((emph === i ? 1 : 0) - s.mat.uniforms.uHover.value) * Math.min(1, dt * 8);
         const pos = s.packets.geometry.getAttribute("position") as THREE.BufferAttribute;
         for (let k = 0; k < s.offs.length; k++) {
           s.offs[k] = (s.offs[k] + dt * (0.18 + 0.05 * (k % 3))) % 1;
@@ -255,8 +290,9 @@ export function SignalConvergence({ sources, progress, onHover }: { sources: Sou
           s.node.getWorldPosition(tmp);
           tmp.project(camera);
           const r = el.getBoundingClientRect();
-          const x = (tmp.x * 0.5 + 0.5) * r.width;
-          const y = (-tmp.y * 0.5 + 0.5) * r.height;
+          // keep every label inside the frame (labels sit 14px right/below their node)
+          const x = Math.max(-10, Math.min(r.width - lab.offsetWidth - 18, (tmp.x * 0.5 + 0.5) * r.width));
+          const y = Math.max(-10, Math.min(r.height - lab.offsetHeight - 18, (-tmp.y * 0.5 + 0.5) * r.height));
           lab.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
           lab.style.opacity = String(0.35 + 0.65 * Math.max(s.mat.uniforms.uOn.value, s.mat.uniforms.uHover.value));
         }
@@ -274,6 +310,7 @@ export function SignalConvergence({ sources, progress, onHover }: { sources: Sou
       ro.disconnect();
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerleave", onLeave);
+      el.removeEventListener("click", onClick);
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         m.geometry?.dispose?.();
@@ -290,7 +327,14 @@ export function SignalConvergence({ sources, progress, onHover }: { sources: Sou
   return (
     <div ref={host} className="converge-canvas">
       {sources.map((s, i) => (
-        <div key={s.id} ref={(n) => void (labels.current[i] = n)} className={`conv-label glass-thin ${hover === i ? "hover" : ""}`}>
+        <div
+          key={s.id}
+          ref={(n) => void (labels.current[i] = n)}
+          className={`conv-label glass-thin ${hover === i || emph === i ? "hover" : ""}`}
+          role="button"
+          tabIndex={-1}
+          onClick={() => onSelect?.(s.id)}
+        >
           <span className="conv-name">{s.label}</span>
           <span className="conv-val mono">{s.value}</span>
         </div>
