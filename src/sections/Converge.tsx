@@ -192,7 +192,9 @@ function ReadingPanel({
         </span>
         <span className="conv-read-t">
           <b>{s.label}</b>
-          <span className="faint small">{s.input}</span>
+          <span className="conv-live">
+            <span className="conv-live-dot" /> SI is reading · <span className={`conv-st ${st.tone}`}>{st.label}</span>
+          </span>
         </span>
         <span className="mono small spop-val">{read.value}</span>
       </div>
@@ -202,9 +204,6 @@ function ReadingPanel({
       </div>
 
       <div className="spop-read">
-        <span className="spop-k">
-          <Icon name="sparkle" size={12} /> SI reading <span className={`badge ${st.tone}`}>{st.label}</span>
-        </span>
         <p className="conv-typed">
           {words.map((w, i) => (
             <span key={i} style={{ animationDelay: `${Math.min(i, 60) * 18}ms` }}>
@@ -225,17 +224,6 @@ function ReadingPanel({
         </div>
       </div>
 
-      <p className="conv-why small muted">
-        {s.why}{" "}
-        {s.source.url ? (
-          <a className="spop-src" href={s.source.url} target="_blank" rel="noopener noreferrer">
-            {s.source.label} <Icon name="external" size={11} />
-          </a>
-        ) : (
-          <span className="spop-src">{s.source.label}</span>
-        )}
-      </p>
-
       <div className="conv-foot">
         <button className="chip" onClick={() => openSI(s.ask)}>
           <Icon name="sparkle" size={13} /> Ask SI
@@ -243,6 +231,11 @@ function ReadingPanel({
         <Link className="chip" href={s.href}>
           Open <Icon name="arrow" size={13} />
         </Link>
+        {s.source.url ? (
+          <a className="conv-src" href={s.source.url} target="_blank" rel="noopener noreferrer" title={`${s.why} — ${s.source.label}`}>
+            <Icon name="doc" size={12} /> Source
+          </a>
+        ) : null}
         <span className="conv-nav">
           <button className="conv-step" onClick={() => onStep(-1)} aria-label="Previous stream">
             <Icon name="chevron" size={14} style={{ transform: "rotate(180deg)" }} />
@@ -267,8 +260,8 @@ function ReadingPanel({
 
 /* ------------------------------ Mini charts ------------------------------ */
 
-const W = 320;
-const H = 92;
+const W = 420;
+const H = 96;
 
 function line(values: number[], lo: number, hi: number, pad = 8) {
   const n = values.length;
@@ -293,8 +286,8 @@ function StreamViz({ id, d, f }: { id: StreamId; d: Derived; f: StreamFacts }) {
       return (
         <svg viewBox={`0 0 ${W} ${H}`} className="sviz" role="img" aria-label={`Last ${f.lengths.length} cycle lengths`}>
           <rect x="8" y={yOf(35, lo, hi)} width={W - 16} height={yOf(21, lo, hi) - yOf(35, lo, hi)} className="sviz-band" />
-          <text x={W - 10} y={yOf(35, lo, hi) - 3} className="sviz-t" textAnchor="end">
-            21–35 d typical
+          <text x="10" y="10" className="sviz-t">
+            shaded: 21–35 days is typical · dashed: her average
           </text>
           {f.lengths.map((l, i) => (
             <g key={i} className="sviz-grow" style={{ animationDelay: `${i * 60}ms` }}>
