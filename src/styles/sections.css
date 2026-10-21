@@ -516,7 +516,7 @@ mark.hl::before {
 @media (max-width: 760px) {
   .converge-copy {
     align-content: end;
-    padding-bottom: 110px;
+    padding-bottom: 28px;
   }
   .conv-list,
   .conv-explain {
@@ -1836,10 +1836,10 @@ mark.hl::before {
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-weight: 700;
-  letter-spacing: 0.22em;
-  font-size: 15px;
+  letter-spacing: 0.24em;
+  font-size: 18px;
   color: var(--fg);
 }
 .wordmark.big {
@@ -1908,7 +1908,7 @@ mark.hl::before {
     margin-bottom: 36px;
   }
   .hero-brand .badge {
-    display: none;
+    font-size: 12px;
   }
   .hero-ctas .btn {
     flex: 1 1 100%;
@@ -1977,7 +1977,7 @@ mark.hl::before {
     width: min(270px, 76vw);
   }
   .footer {
-    padding-bottom: 120px;
+    padding-bottom: 32px;
   }
 }
 
