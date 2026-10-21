@@ -19,35 +19,25 @@ export function VideoSlot({
   title,
   kicker,
   ratio = "21 / 9",
+  silent = false,
 }: {
   src: string;
   poster?: string;
   title: string;
   kicker: string;
   ratio?: string;
+  /** the file has no audio track, so there is nothing to unmute */
+  silent?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const vid = useRef<HTMLVideoElement>(null);
   const vis = useVisible(box, "120px");
-  const [state, setState] = useState<"probe" | "ready" | "missing">("probe");
+  const [state, setState] = useState<"ready" | "missing">("ready");
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
 
-  // Probe the file once (HEAD) so we can show an honest empty state.
-  useEffect(() => {
-    let alive = true;
-    fetch(src, { method: "HEAD" })
-      .then((r) => {
-        const type = r.headers.get("content-type") ?? "";
-        if (!alive) return;
-        setState(r.ok && !type.includes("text/html") ? "ready" : "missing");
-      })
-      .catch(() => alive && setState("missing"));
-    return () => {
-      alive = false;
-    };
-  }, [src]);
-
+  // Render the film straight away (poster first); if the file is missing the
+  // <video> errors and we fall back to an honest empty state.
   useEffect(() => {
     const v = vid.current;
     if (!v || state !== "ready") return;
@@ -62,7 +52,6 @@ export function VideoSlot({
           <video
             ref={vid}
             className="vslot-video"
-            src={src}
             poster={poster}
             muted={muted}
             loop
@@ -70,8 +59,11 @@ export function VideoSlot({
             preload="metadata"
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
-            onError={() => setState("missing")}
-          />
+          >
+            <source src={src} type="video/mp4" />
+            {/* same film as WebM for browsers without H.264; the last source erroring means none could play */}
+            <source src={src.replace(/\.mp4$/, ".webm")} type="video/webm" onError={() => setState("missing")} />
+          </video>
           <div className="vslot-ui">
             <span className="chip">
               <span className="eyebrow" style={{ fontSize: 11 }}>
@@ -89,11 +81,13 @@ export function VideoSlot({
                 }}
                 aria-label={playing ? "Pause video" : "Play video"}
               >
-                <Icon name={playing ? "minus" : "play"} size={16} /> {playing ? "Pause" : "Play"}
+                <Icon name={playing ? "pause" : "play"} size={16} /> {playing ? "Pause" : "Play"}
               </button>
-              <button className="btn ghost sm" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"}>
-                <Icon name={muted ? "mute" : "sound"} size={16} />
-              </button>
+              {!silent && (
+                <button className="btn ghost sm" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"}>
+                  <Icon name={muted ? "mute" : "sound"} size={16} />
+                </button>
+              )}
             </div>
           </div>
         </>
@@ -105,9 +99,9 @@ export function VideoSlot({
             <span />
           </div>
           <div className="vslot-msg">
-            <span className="badge">{state === "probe" ? "Loading film…" : "Film slot"}</span>
+            <span className="badge">Film slot</span>
             <h3 className="title-md">{title}</h3>
-            {state === "missing" && (
+            {(
               <p className="small muted" style={{ maxWidth: 520, margin: 0 }}>
                 Add <code className="mono">{src.replace(/^\//, "public/")}</code> and it will play here automatically —
                 muted, looping, and paused when you scroll away.
