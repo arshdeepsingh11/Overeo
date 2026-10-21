@@ -39,25 +39,24 @@ export function StreamPop({ id, onClose }: { id: StreamId; onClose: () => void }
       <p className="spop-what">{s.what}</p>
       <div className="spop-read">
         <span className="spop-k">
-          <Icon name="sparkle" size={12} /> SI reads · {d.profile.name} <span className={`badge ${st.tone}`}>{st.label}</span>
+          <Icon name="sparkle" size={12} /> SI reads {d.profile.name} <span className={`badge ${st.tone}`}>{st.label}</span>
         </span>
         <p>{read.insight}</p>
       </div>
       <div className="spop-why">
         <span className="spop-k">Why it matters</span>
         <p>{s.why}</p>
+      </div>
+      <div className="spop-actions">
         {s.source.url ? (
-          <a className="spop-src" href={s.source.url} target="_blank" rel="noopener noreferrer">
-            {s.source.label} <Icon name="external" size={12} />
+          <a className="spop-src" href={s.source.url} target="_blank" rel="noopener noreferrer" title={s.source.label}>
+            <Icon name="doc" size={12} /> {s.source.label} <Icon name="external" size={11} />
           </a>
         ) : (
-          <span className="spop-src">{s.source.label}</span>
+          <span className="spop-src">
+            <Icon name="doc" size={12} /> {s.source.label}
+          </span>
         )}
-      </div>
-      <p className="spop-in faint small">
-        <Icon name="plus" size={12} /> {s.input}
-      </p>
-      <div className="spop-actions">
         <button
           className="chip"
           onClick={() => {

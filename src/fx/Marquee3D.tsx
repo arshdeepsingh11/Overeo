@@ -32,11 +32,12 @@ export function Marquee3D({ icons, renderInfo }: { icons: MarqueeIcon[]; renderI
   const vis = useVisible(track, "60px");
   const [focusId, setFocusId] = useState<string | null>(null);
   const [active, setActive] = useState<string | null>(null);
-  const st = useRef({ x: 0, speed: CRUISE, target: CRUISE, hover: false, active: -1, pinned: false });
+  const st = useRef({ x: 0, speed: CRUISE, target: CRUISE, hover: false, active: -1, pinned: false, holdUntil: 0 });
   const closeT = useRef(0);
 
   const open = (id: string, pinned = false) => {
     clearTimeout(closeT.current);
+    if (pop.current && st.current.active !== icons.findIndex((x) => x.id === id)) delete pop.current.dataset.fit;
     const i = icons.findIndex((x) => x.id === id);
     st.current.active = i;
     st.current.pinned = pinned;
@@ -45,13 +46,15 @@ export function Marquee3D({ icons, renderInfo }: { icons: MarqueeIcon[]; renderI
   };
   const close = () => {
     clearTimeout(closeT.current);
+    if (pop.current) delete pop.current.dataset.fit;
     st.current.active = -1;
     st.current.pinned = false;
     st.current.target = st.current.hover ? SLOW : CRUISE;
     setActive(null);
   };
   const closeSoon = () => {
-    if (st.current.pinned) return;
+    // the page is easing to make room for the card — boundary events then aren't the user leaving
+    if (st.current.pinned || performance.now() < st.current.holdUntil) return;
     clearTimeout(closeT.current);
     closeT.current = window.setTimeout(close, 650);
   };
@@ -97,14 +100,31 @@ export function Marquee3D({ icons, renderInfo }: { icons: MarqueeIcon[]; renderI
           best = i;
         }
       });
-      // keep the card under its icon while the stream settles
+      // keep the card pinned to its icon while the stream settles — it opens
+      // upward over the hero; if there isn't room above, it drops below
       if (s.active >= 0 && pop.current) {
-        const r = nodes[s.active].getBoundingClientRect();
+        const ic = (nodes[s.active].querySelector(".mq-icon") ?? nodes[s.active]).getBoundingClientRect();
+        const lab = nodes[s.active].getBoundingClientRect();
         const h = host.getBoundingClientRect();
         const pw = pop.current.offsetWidth;
-        const left = Math.max(8, Math.min(h.width - pw - 8, r.left - h.left + r.width / 2 - pw / 2));
-        pop.current.style.transform = `translate3d(${left.toFixed(1)}px, ${(r.bottom - h.top + 10).toFixed(1)}px, 0)`;
-        pop.current.style.setProperty("--ax", `${(r.left - h.left + r.width / 2 - left).toFixed(1)}px`);
+        const ph = pop.current.offsetHeight;
+        const left = Math.max(8, Math.min(h.width - pw - 8, ic.left - h.left + ic.width / 2 - pw / 2));
+        // always open upward: if there isn't room, ease the page down once so there is
+        let up = ic.top - ph - 14 > 64;
+        if (!up && pop.current.dataset.fit !== "1") {
+          pop.current.dataset.fit = "1";
+          const need = ph + 14 + 72 - ic.top;
+          if (scrollY >= need) {
+            s.holdUntil = performance.now() + 1200;
+            scrollBy({ top: -need, behavior: "smooth" });
+            up = true;
+          }
+        }
+        if (pop.current.dataset.fit === "1" && scrollY > 0) up = true;
+        const top = up ? ic.top - h.top - ph - 14 : lab.bottom - h.top + 10;
+        pop.current.style.transform = `translate3d(${left.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
+        pop.current.style.setProperty("--ax", `${(ic.left - h.left + ic.width / 2 - left).toFixed(1)}px`);
+        if (pop.current.dataset.side !== (up ? "up" : "down")) pop.current.dataset.side = up ? "up" : "down";
       }
       const id = s.active >= 0 ? icons[s.active].id : s.hover && best >= 0 ? icons[best].id : null;
       setFocusId((f) => (f === id ? f : id));

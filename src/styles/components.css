@@ -2382,3 +2382,38 @@ span.spop-src {
 .mq-item {
   pointer-events: auto;
 }
+
+/* ---- Strip card v2: opens upward, cleaner sections ---- */
+.mq-pop {
+  width: min(400px, calc(100% - 16px));
+  padding: 16px 16px 14px;
+}
+.mq-pop[data-side="up"]::before {
+  top: auto;
+  bottom: -7px;
+  rotate: 225deg;
+}
+.mq-pop[data-side="up"] {
+  translate: 0 -8px;
+}
+.mq-pop.open {
+  translate: 0 0;
+}
+.spop {
+  gap: 11px;
+}
+.spop-what {
+  font-size: 13px !important;
+}
+.spop-why {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.spop-actions {
+  align-items: center;
+  padding-top: 2px;
+}
+.spop-actions .spop-src {
+  flex-basis: 100%;
+  margin: 0 0 4px;
+}
