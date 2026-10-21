@@ -16,6 +16,7 @@ import { Icon, type IconName } from "../ui/Icon";
 import { Hero } from "../sections/Hero";
 import { MeetSI } from "../sections/MeetSI";
 import { Converge } from "../sections/Converge";
+import { LabsShowcase } from "../sections/LabsShowcase";
 
 /* =====================================================================
    Home — the hub. A short hero, then every area of the platform as a
@@ -32,6 +33,7 @@ export function HomeView() {
       <MeetSI />
       <SpecialtyStrip />
       <Converge />
+      <LabsShowcase />
       <NavigatorTeaser />
     </>
   );
