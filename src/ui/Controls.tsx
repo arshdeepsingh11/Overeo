@@ -101,7 +101,7 @@ export function Dock({ items }: { items: DockItem[] }) {
                 it.onClick();
               }}
             >
-              <Icon name={it.icon} size={21} />
+              <Icon name={it.icon} size={23} />
               {it.featured && (
                 <span className="dock-feat">
                   Ask SI <span className="kbd">O</span>
