@@ -8,8 +8,9 @@ import { run } from "../core/bus";
 import { ROUTES } from "../core/routes";
 import { SPECIALTIES } from "../content/specialties";
 import { Dock } from "../ui/Controls";
+import type { IconName } from "../ui/Icon";
 import { Icon } from "../ui/Icon";
-import { sound } from "../lib/audio";
+import { sound, tick } from "../lib/audio";
 
 /* =====================================================================
    Shell: calm backdrop + mood, the one bottom navigation (dock + sections
@@ -157,7 +158,58 @@ export function NavDock() {
           { id: "theme", icon: theme === "dark" ? "moon" : "sun", label: theme === "dark" ? "Dark · switch to light" : "Light · switch to dark", onClick: () => setTheme(theme === "dark" ? "light" : "dark"), divider: true },
         ]}
       />
+      <MobileTabBar sheet={sheet} onMore={() => setSheet((s) => !s)} />
     </>
+  );
+}
+
+/** Phones: an iOS-style tab bar fixed to the bottom edge (safe-area aware).
+ *  Five targets, labelled, 48px+ touch areas; everything else lives in More. */
+function MobileTabBar({ sheet, onMore }: { sheet: boolean; onMore: () => void }) {
+  const active = useStore((s) => s.activeSection);
+  const mode = useStore((s) => s.mode);
+  const story = mode === "story" && !sheet;
+  const tabs: { id: string; icon: IconName; label: string; on: boolean; go: () => void }[] = [
+    { id: "home", icon: "home", label: "Home", on: story && active === "hero", go: () => run({ type: "goto", section: "hero" }) },
+    { id: "today", icon: "calendar", label: "Today", on: story && active === "today", go: () => run({ type: "goto", section: "today" }) },
+  ];
+  const right: typeof tabs = [
+    { id: "signals", icon: "radar", label: "Signals", on: story && active === "radar", go: () => run({ type: "goto", section: "radar" }) },
+    { id: "more", icon: "grid", label: "More", on: sheet, go: onMore },
+  ];
+  const tab = (t: (typeof tabs)[number]) => (
+    <button
+      key={t.id}
+      className={`mtab-btn ${t.on ? "on" : ""}`}
+      aria-current={t.on && t.id !== "more" ? "page" : undefined}
+      aria-expanded={t.id === "more" ? sheet : undefined}
+      onClick={() => {
+        tick(1400);
+        t.go();
+      }}
+    >
+      <Icon name={t.icon} size={24} />
+      <span className="mtab-l">{t.label}</span>
+    </button>
+  );
+  return (
+    <nav className="mtab glass-thick" aria-label="Main navigation">
+      {tabs.map(tab)}
+      <button
+        className="mtab-si"
+        aria-label="Ask Overeo SI"
+        onClick={() => {
+          tick(1400);
+          openSI();
+        }}
+      >
+        <span className="mtab-orb">
+          <Icon name="sparkle" size={24} />
+        </span>
+        <span className="mtab-l">Ask SI</span>
+      </button>
+      {right.map(tab)}
+    </nav>
   );
 }
 
@@ -208,6 +260,16 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
           className="chip"
           onClick={() => {
             onClose();
+            run({ type: "mode", value: "space" });
+          }}
+        >
+          <Icon name="cube" size={14} /> Space · 3D
+        </button>
+        <ThemeChip />
+        <button
+          className="chip"
+          onClick={() => {
+            onClose();
             run({ type: "mode", value: "ar" });
           }}
         >
@@ -246,6 +308,15 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function ThemeChip() {
+  const theme = useStore((s) => s.theme);
+  return (
+    <button className="chip" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+      <Icon name={theme === "dark" ? "moon" : "sun"} size={14} /> {theme === "dark" ? "Dark" : "Light"}
+    </button>
   );
 }
 
