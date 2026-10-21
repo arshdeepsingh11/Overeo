@@ -13,7 +13,7 @@ export function LogoMark({ size = 24, className, title }: { size?: number; class
       className={className}
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="6 6 52 52"
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
       aria-label={title}
@@ -38,7 +38,7 @@ export function LogoMark({ size = 24, className, title }: { size?: number; class
 export function Wordmark({ big = false }: { big?: boolean }) {
   return (
     <span className={`wordmark ${big ? "big" : ""}`}>
-      <LogoMark size={big ? 40 : 34} className="wm-logo" />
+      <LogoMark size={big ? 48 : 42} className="wm-logo" />
       OVEREO
     </span>
   );
