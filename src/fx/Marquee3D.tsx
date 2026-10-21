@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Icon, type IconName } from "../ui/Icon";
 import { useVisible } from "../lib/hooks";
 import { openSI } from "../core/store";
 
 /* ------------------------------------------------------------------ *
  * Focused 3D Marquee — physical 3D app icons drift across a central
- * lens. Icons scale and turn toward you as they cross the lens; hover
- * slows the stream to a near stop and focuses the closest icon into a
- * crisp central zoom. Click an icon to ask Overeo SI about it.
+ * lens. Icons scale and turn toward you as they cross the lens.
+ *
+ * Hover (or tap) an icon and the stream glides to a stop and an info
+ * card opens under it — it stays put while you read, and you can move
+ * into the card to use its links. Leave both and the stream drifts on.
  * ------------------------------------------------------------------ */
 
 export interface MarqueeIcon {
@@ -20,18 +22,47 @@ export interface MarqueeIcon {
   ask: string;
 }
 
-export function Marquee3D({ icons }: { icons: MarqueeIcon[] }) {
+const CRUISE = 60;
+const SLOW = 8;
+
+export function Marquee3D({ icons, renderInfo }: { icons: MarqueeIcon[]; renderInfo?: (id: string, close: () => void) => ReactNode }) {
+  const wrap = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
   const vis = useVisible(track, "60px");
   const [focusId, setFocusId] = useState<string | null>(null);
-  const st = useRef({ x: 0, speed: 60, target: 60, hover: false });
+  const [active, setActive] = useState<string | null>(null);
+  const st = useRef({ x: 0, speed: CRUISE, target: CRUISE, hover: false, active: -1, pinned: false });
+  const closeT = useRef(0);
+
+  const open = (id: string, pinned = false) => {
+    clearTimeout(closeT.current);
+    const i = icons.findIndex((x) => x.id === id);
+    st.current.active = i;
+    st.current.pinned = pinned;
+    st.current.target = 0;
+    setActive(id);
+  };
+  const close = () => {
+    clearTimeout(closeT.current);
+    st.current.active = -1;
+    st.current.pinned = false;
+    st.current.target = st.current.hover ? SLOW : CRUISE;
+    setActive(null);
+  };
+  const closeSoon = () => {
+    if (st.current.pinned) return;
+    clearTimeout(closeT.current);
+    closeT.current = window.setTimeout(close, 650);
+  };
 
   useEffect(() => {
     if (!vis) return;
     const el = track.current;
-    if (!el) return;
+    const host = wrap.current;
+    if (!el || !host) return;
     const nodes = [...el.querySelectorAll<HTMLElement>(".mq-item")];
-    const GAP = 112;
+    const GAP = innerWidth < 640 ? 100 : 112;
     const total = nodes.length * GAP;
     let raf = 0;
     let last = performance.now();
@@ -39,7 +70,9 @@ export function Marquee3D({ icons }: { icons: MarqueeIcon[] }) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const s = st.current;
-      s.speed += (s.target - s.speed) * Math.min(1, dt * 3.2);
+      // stop quickly and completely when a card is open, so it can be read
+      s.speed += (s.target - s.speed) * Math.min(1, dt * (s.target === 0 ? 7 : 4));
+      if (s.target === 0 && Math.abs(s.speed) < 3) s.speed = 0;
       s.x = (s.x + s.speed * dt) % total;
       const w = el.clientWidth;
       const cx = w / 2;
@@ -51,19 +84,29 @@ export function Marquee3D({ icons }: { icons: MarqueeIcon[] }) {
         const px = x - total / 2 + cx;
         const d = (px - cx) / (w / 2); // -1..1 across the lens
         const ad = Math.min(1.4, Math.abs(d));
-        const scale = 1 + 0.75 * Math.max(0, 1 - ad * 1.6) ** 2;
-        const rot = Math.max(-62, Math.min(62, d * 70));
+        const lift = s.active === i ? 0.12 : 0;
+        const scale = 1 + 0.75 * Math.max(0, 1 - ad * 1.6) ** 2 + lift;
+        const rot = s.active === i ? 0 : Math.max(-62, Math.min(62, d * 70));
         const z = -ad * 160;
         n.style.transform = `translate3d(${px - 40}px, -50%, ${z}px) rotateY(${-rot}deg) scale(${scale})`;
-        n.style.opacity = String(Math.max(0, 1 - ad * 0.85));
-        n.style.filter = ad > 0.5 ? `blur(${((ad - 0.5) * 3).toFixed(1)}px)` : "none";
-        n.style.zIndex = String(100 - Math.round(ad * 100));
+        n.style.opacity = String(s.active === i ? 1 : Math.max(0, 1 - ad * 0.85));
+        n.style.filter = ad > 0.5 && s.active !== i ? `blur(${((ad - 0.5) * 3).toFixed(1)}px)` : "none";
+        n.style.zIndex = String(s.active === i ? 200 : 100 - Math.round(ad * 100));
         if (Math.abs(px - cx) < bestD) {
           bestD = Math.abs(px - cx);
           best = i;
         }
       });
-      const id = s.hover && best >= 0 ? icons[best].id : null;
+      // keep the card under its icon while the stream settles
+      if (s.active >= 0 && pop.current) {
+        const r = nodes[s.active].getBoundingClientRect();
+        const h = host.getBoundingClientRect();
+        const pw = pop.current.offsetWidth;
+        const left = Math.max(8, Math.min(h.width - pw - 8, r.left - h.left + r.width / 2 - pw / 2));
+        pop.current.style.transform = `translate3d(${left.toFixed(1)}px, ${(r.bottom - h.top + 10).toFixed(1)}px, 0)`;
+        pop.current.style.setProperty("--ax", `${(r.left - h.left + r.width / 2 - left).toFixed(1)}px`);
+      }
+      const id = s.active >= 0 ? icons[s.active].id : s.hover && best >= 0 ? icons[best].id : null;
       setFocusId((f) => (f === id ? f : id));
       raf = requestAnimationFrame(loop);
     };
@@ -71,36 +114,81 @@ export function Marquee3D({ icons }: { icons: MarqueeIcon[] }) {
     return () => cancelAnimationFrame(raf);
   }, [vis, icons]);
 
+  useEffect(() => {
+    if (!active) return;
+    const key = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const away = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) close();
+    };
+    addEventListener("keydown", key);
+    addEventListener("pointerdown", away);
+    return () => {
+      removeEventListener("keydown", key);
+      removeEventListener("pointerdown", away);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
   return (
-    <div
-      className="mq"
-      onPointerEnter={() => {
-        st.current.hover = true;
-        st.current.target = 6;
-      }}
-      onPointerLeave={() => {
-        st.current.hover = false;
-        st.current.target = 60;
-      }}
-    >
-      <div className="mq-lens" aria-hidden="true" />
-      <div ref={track} className="mq-track" role="list" aria-label="What OVEREO reads">
-        {icons.map((it) => (
-          <button
-            key={it.id}
-            role="listitem"
-            className={`mq-item ${focusId === it.id ? "focus" : ""}`}
-            style={{ "--h": it.hue } as CSSProperties}
-            onClick={() => openSI(it.ask)}
-            aria-label={`${it.label} — ask Overeo SI`}
-          >
-            <span className="mq-icon">
-              <Icon name={it.icon} size={34} stroke={1.6} />
-            </span>
-            <span className="mq-label">{it.label}</span>
-          </button>
-        ))}
+    <div ref={wrap} className={`mq-wrap ${active ? "has-pop" : ""}`}>
+      <div
+        className="mq"
+        onPointerEnter={(e) => {
+          if (e.pointerType !== "mouse") return;
+          st.current.hover = true;
+          if (st.current.active < 0) st.current.target = SLOW;
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType !== "mouse") return;
+          st.current.hover = false;
+          if (st.current.active < 0) st.current.target = CRUISE;
+        }}
+      >
+        <div className="mq-lens" aria-hidden="true" />
+        <div ref={track} className="mq-track" role="list" aria-label="What OVEREO reads">
+          {icons.map((it) => (
+            <button
+              key={it.id}
+              role="listitem"
+              className={`mq-item ${focusId === it.id ? "focus" : ""} ${active === it.id ? "on" : ""}`}
+              style={{ "--h": it.hue } as CSSProperties}
+              aria-expanded={renderInfo ? active === it.id : undefined}
+              aria-label={renderInfo ? `${it.label} — show details` : `${it.label} — ask Overeo SI`}
+              onPointerMove={(e) => {
+                // real movement only — a page scrolling under a resting cursor doesn't open cards
+                if (e.pointerType !== "mouse" || !renderInfo || st.current.pinned) return;
+                if (e.movementX === 0 && e.movementY === 0) return;
+                if (active !== it.id) open(it.id);
+              }}
+              onPointerLeave={(e) => e.pointerType === "mouse" && closeSoon()}
+              onFocus={(e) => renderInfo && e.currentTarget.matches(":focus-visible") && open(it.id)}
+              onClick={() => {
+                if (!renderInfo) return openSI(it.ask);
+                if (active === it.id && st.current.pinned) close();
+                else open(it.id, true);
+              }}
+            >
+              <span className="mq-icon">
+                <Icon name={it.icon} size={34} stroke={1.6} />
+              </span>
+              <span className="mq-label">{it.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
+      {renderInfo && (
+        <div
+          ref={pop}
+          className={`mq-pop glass ${active ? "open" : ""}`}
+          role="dialog"
+          aria-hidden={!active}
+          aria-label={active ? `${icons.find((x) => x.id === active)?.label} details` : undefined}
+          onPointerEnter={() => clearTimeout(closeT.current)}
+          onPointerLeave={(e) => e.pointerType === "mouse" && closeSoon()}
+        >
+          {active && renderInfo(active, close)}
+        </div>
+      )}
     </div>
   );
 }

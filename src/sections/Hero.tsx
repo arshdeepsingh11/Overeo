@@ -13,23 +13,13 @@ import { useDerived } from "../core/derived";
 import { run } from "../core/bus";
 import { PHASE_META } from "../core/engines/forecast";
 import { levelLabel } from "../core/engines/signals";
+import { STREAMS, STRIP, type StreamId } from "../core/streams";
+import { StreamPop } from "../ui/StreamPop";
 
-const ICONS: MarqueeIcon[] = [
-  { id: "cycle", icon: "cycle", label: "Cycle", hue: 340, ask: "Which phase is she in?" },
-  { id: "temp", icon: "waves", label: "Temperature", hue: 20, ask: "What does skin temperature show?" },
-  { id: "heart", icon: "heart", label: "Heart", hue: 330, ask: "Tell me about women's heart health" },
-  { id: "sleep", icon: "moon", label: "Sleep", hue: 300, ask: "Why does sleep drop before her period?" },
-  { id: "labs", icon: "flask", label: "Labs", hue: 25, ask: "What does AMH 1.3 mean?" },
-  { id: "dna", icon: "dna", label: "Genome", hue: 310, ask: "How is genetic data handled?" },
-  { id: "micro", icon: "target", label: "Microbiome", hue: 35, ask: "What does her microbiome show?" },
-  { id: "pain", icon: "drop", label: "Symptoms", hue: 335, ask: "Is this endometriosis?" },
-  { id: "meds", icon: "shield", label: "Medicines", hue: 290, ask: "Why do women get more drug side effects?" },
-  { id: "clock", icon: "clock", label: "Ovarian Clock", hue: 320, ask: "Explain her Ovarian Clock" },
-  { id: "radar", icon: "radar", label: "Signals", hue: 328, ask: "What patterns have you noticed?" },
-  { id: "future", icon: "trend", label: "Future Self", hue: 22, ask: "What if she starts strength training?" },
-  { id: "care", icon: "users", label: "Care team", hue: 305, ask: "Who will see her results?" },
-  { id: "privacy", icon: "lock", label: "Privacy", hue: 315, ask: "Who sees my data?" },
-];
+const ICONS: MarqueeIcon[] = STRIP.map((id) => {
+  const s = STREAMS[id];
+  return { id, icon: s.icon, label: s.label, hue: s.hue, ask: s.ask };
+});
 
 export function Hero() {
   const d = useDerived();
@@ -141,11 +131,11 @@ export function Hero() {
       </div>
 
       <div className="hero-marquee">
-        <Marquee3D icons={ICONS} />
-        <p className="faint small center">Fourteen streams, read together. Tap any one to ask SI.</p>
+        <Marquee3D icons={ICONS} renderInfo={(id, close) => <StreamPop id={id as StreamId} onClose={close} />} />
+        <p className="faint small center">Fourteen streams, read together. Hover or tap any one to see what it tells us.</p>
       </div>
       <div className="wrap film-wrap" id="film">
-        <VideoSlot src="/videos/overeo-brand-film.mp4" poster="/videos/overeo-brand-film.jpg" title="The OVEREO brand film" kicker="Brand film" />
+        <VideoSlot src="/videos/overeo-brand-film.mp4" poster="/videos/overeo-brand-film.jpg" title="The OVEREO brand film" kicker="OVEREO · Brand film" ratio="2560 / 1098" silent />
       </div>
     </section>
   );
