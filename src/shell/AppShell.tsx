@@ -9,6 +9,7 @@ import { setNavigator, routeIdFor } from "../core/routes";
 import { narrateSection } from "../core/insights";
 import { Backdrop, NavDock, CollabCursors, Toasts, useGlobalKeys, usePointerSheen } from "./Shell";
 import { Footer } from "../sections/Join";
+import { SpaceRuntime } from "./SpaceRuntime";
 
 // Heavy, on-demand layers load only when first opened.
 const OvereoSI = dynamic(() => import("../si/OvereoSI").then((m) => m.OvereoSI), { ssr: false });
@@ -81,13 +82,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="main" aria-hidden={mode !== "story"}>
         {children}
       </main>
-      <Footer />
+      {/* her app screens are an app, not a page — no marketing footer there */}
+      {!pathname?.startsWith("/app") && <Footer />}
       <CollabCursors />
       <NavDock />
       <Toasts />
       {mode === "space" && <SpaceMode />}
       {mode === "ar" && <ARMode />}
       {siOpen && <OvereoSI />}
+      <SpaceRuntime />
     </>
   );
 }

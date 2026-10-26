@@ -7,7 +7,11 @@ import Link from "next/link";
 import { run } from "../core/bus";
 import { ROUTES } from "../core/routes";
 import { SPECIALTIES } from "../content/specialties";
-import { Dock } from "../ui/Controls";
+import { usePathname } from "next/navigation";
+import { navigate } from "../core/routes";
+import { useSpace } from "../personal/space";
+import { useT } from "../personal/useT";
+import { SparkleNav } from "./SparkleNav";
 import type { IconName } from "../ui/Icon";
 import { Icon } from "../ui/Icon";
 import { sound, tick } from "../lib/audio";
@@ -122,14 +126,30 @@ export function usePointerSheen() {
   }, []);
 }
 
-/* ---------------------------- Navigation dock ---------------------------- */
+/* ---------------------------- Navigation ---------------------------- */
 const MOODS: Mood[] = ["auto", "calm", "focus", "energize", "night"];
 const GROUPS = ["You", "Her biology", "Care", "Science", "OVEREO"] as const;
 
+/** Which nav item a path belongs to. */
+function navIdFor(path: string): string | null {
+  const p = path.replace(/\/+$/, "") || "/";
+  if (p === "/") return "home";
+  if (p.startsWith("/app/track")) return "track";
+  if (p.startsWith("/app/agents") || p.startsWith("/app/inbox") || p.startsWith("/app/diary")) return "agents";
+  if (p.startsWith("/app/me")) return "me";
+  if (p.startsWith("/app")) return "today";
+  if (p.startsWith("/signals")) return "signals";
+  if (p.startsWith("/tests")) return "tests";
+  if (p.startsWith("/care")) return "care";
+  return null;
+}
+
 export function NavDock() {
-  const mode = useStore((s) => s.mode);
+  const t = useT();
   const theme = useStore((s) => s.theme);
   const active = useStore((s) => s.activeSection);
+  const pending = useSpace((s) => s.inbox.filter((x) => x.status === "pending").length);
+  const path = usePathname() ?? "/";
   const [sheet, setSheet] = useState(false);
 
   // close the sheet on Escape and whenever the page changes
@@ -141,55 +161,69 @@ export function NavDock() {
   }, [sheet]);
   useEffect(() => setSheet(false), [active]);
 
-  const story = mode === "story";
+  const go = (href: string) => () => {
+    setSheet(false);
+    navigate(href);
+  };
+  const current = sheet ? "more" : navIdFor(path);
   return (
     <>
       {sheet && <SectionsSheet onClose={() => setSheet(false)} />}
-      <Dock
+      <SparkleNav
+        active={current}
         items={[
-          { id: "home", icon: "home", label: "Home", onClick: () => run({ type: "goto", section: "hero" }), active: active === "hero" && story && !sheet },
-          { id: "menu", icon: "grid", label: "Explore everything", onClick: () => setSheet((s) => !s), active: sheet },
-          { id: "si", icon: "sparkle", label: "Ask Overeo SI · O", onClick: () => openSI(), featured: true, divider: true },
-          { id: "clock", icon: "clock", label: "Ovarian Clock", onClick: () => run({ type: "goto", section: "clock" }), active: story && (active === "clock" || active === "lens"), hideOnMobile: true, divider: true },
-          { id: "radar", icon: "radar", label: "Silent Signals", onClick: () => run({ type: "goto", section: "radar" }), active: story && active === "radar", hideOnMobile: true },
-          { id: "future", icon: "trend", label: "Future Self", onClick: () => run({ type: "goto", section: "futures" }), active: story && active === "futures", hideOnMobile: true },
-          { id: "space", icon: "cube", label: "Space · 3D dashboard", onClick: () => run({ type: "mode", value: mode === "space" ? "story" : "space" }), active: mode === "space", divider: true },
-          { id: "ar", icon: "ar", label: "AR mode", onClick: () => run({ type: "mode", value: mode === "ar" ? "story" : "ar" }), active: mode === "ar", hideOnMobile: true },
-          { id: "theme", icon: theme === "dark" ? "moon" : "sun", label: theme === "dark" ? "Dark · switch to light" : "Light · switch to dark", onClick: () => setTheme(theme === "dark" ? "light" : "dark"), divider: true },
+          { id: "home", label: t("nav.home"), onSelect: go("/") },
+          { id: "today", label: t("nav.myspace"), onSelect: go("/app") },
+          { id: "track", label: t("nav.track"), onSelect: go("/app/track") },
+          { id: "agents", label: t("nav.agents"), icon: pending ? <span className="sn-badge" aria-label={`${pending} waiting`}>{pending}</span> : undefined, onSelect: go("/app/agents") },
+          { id: "signals", label: t("nav.signals"), onSelect: go("/signals") },
+          { id: "tests", label: t("nav.tests"), onSelect: go("/tests") },
+          { id: "more", label: t("nav.more"), toggle: true, onSelect: () => setSheet((x) => !x) },
         ]}
+        trailing={
+          <>
+            <button className="sn-si" onClick={() => openSI()} aria-label="Ask Overeo SI (press O)">
+              <Icon name="sparkle" size={16} /> {t("nav.si")} <span className="kbd kbd-inv">O</span>
+            </button>
+            <button className="sn-icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={theme === "dark" ? "Switch to light" : "Switch to dark"}>
+              <Icon name={theme === "dark" ? "moon" : "sun"} size={17} />
+            </button>
+          </>
+        }
       />
-      <MobileTabBar sheet={sheet} onMore={() => setSheet((s) => !s)} />
+      <MobileTabBar sheet={sheet} path={path} />
     </>
   );
 }
 
-/** Phones: an iOS-style tab bar fixed to the bottom edge (safe-area aware).
- *  Five targets, labelled, 48px+ touch areas; everything else lives in More. */
-function MobileTabBar({ sheet, onMore }: { sheet: boolean; onMore: () => void }) {
-  const active = useStore((s) => s.activeSection);
-  const mode = useStore((s) => s.mode);
-  const story = mode === "story" && !sheet;
-  const tabs: { id: string; icon: IconName; label: string; on: boolean; go: () => void }[] = [
-    { id: "home", icon: "home", label: "Home", on: story && active === "hero", go: () => run({ type: "goto", section: "hero" }) },
-    { id: "today", icon: "calendar", label: "Today", on: story && active === "today", go: () => run({ type: "goto", section: "today" }) },
+/** Phones: her app — Today · Track · SI · Agents · Me. Everything else lives in Me → Explore and the logo. */
+function MobileTabBar({ sheet, path }: { sheet: boolean; path: string }) {
+  const t = useT();
+  const pending = useSpace((s) => s.inbox.filter((x) => x.status === "pending").length);
+  const cur = sheet ? null : navIdFor(path);
+  const tabs: { id: string; icon: IconName; label: string; href: string; badge?: number }[] = [
+    { id: "today", icon: "calendar", label: t("nav.today"), href: "/app" },
+    { id: "track", icon: "plus", label: t("nav.track"), href: "/app/track" },
   ];
   const right: typeof tabs = [
-    { id: "signals", icon: "radar", label: "Signals", on: story && active === "radar", go: () => run({ type: "goto", section: "radar" }) },
-    { id: "more", icon: "grid", label: "More", on: sheet, go: onMore },
+    { id: "agents", icon: "bot", label: t("nav.agents"), href: "/app/agents", badge: pending },
+    { id: "me", icon: "user", label: t("nav.me"), href: "/app/me" },
   ];
-  const tab = (t: (typeof tabs)[number]) => (
+  const tab = (x: (typeof tabs)[number]) => (
     <button
-      key={t.id}
-      className={`mtab-btn ${t.on ? "on" : ""}`}
-      aria-current={t.on && t.id !== "more" ? "page" : undefined}
-      aria-expanded={t.id === "more" ? sheet : undefined}
+      key={x.id}
+      className={`mtab-btn ${cur === x.id ? "on" : ""} ${x.id === "track" ? "mtab-plus" : ""}`}
+      aria-current={cur === x.id ? "page" : undefined}
       onClick={() => {
         tick(1400);
-        t.go();
+        navigate(x.href);
       }}
     >
-      <Icon name={t.icon} size={24} />
-      <span className="mtab-l">{t.label}</span>
+      <span className="mtab-ic">
+        <Icon name={x.icon} size={24} />
+        {!!x.badge && <span className="mtab-badge">{x.badge}</span>}
+      </span>
+      <span className="mtab-l">{x.label}</span>
     </button>
   );
   return (
@@ -206,7 +240,7 @@ function MobileTabBar({ sheet, onMore }: { sheet: boolean; onMore: () => void })
         <span className="mtab-orb">
           <Icon name="sparkle" size={24} />
         </span>
-        <span className="mtab-l">Ask SI</span>
+        <span className="mtab-l">{t("nav.si")}</span>
       </button>
       {right.map(tab)}
     </nav>
@@ -223,7 +257,7 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const away = (e: PointerEvent) => {
       const t = e.target as HTMLElement;
-      if (ref.current && !ref.current.contains(t) && !t.closest(".dock")) onClose();
+      if (ref.current && !ref.current.contains(t) && !t.closest(".snav, .mtab")) onClose();
     };
     addEventListener("pointerdown", away);
     return () => removeEventListener("pointerdown", away);
@@ -231,6 +265,28 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
   return (
     <div ref={ref} className="sheet glass-thick" role="dialog" aria-label="Explore OVEREO">
       <div className="sheet-grid">
+        <div className="sheet-group">
+          <span className="sheet-g">Your space</span>
+          {(
+            [
+              ["/app", "calendar", "Today", "Your day and what's coming"],
+              ["/app/track", "plus", "Track", "Log anything in two taps"],
+              ["/app/agents", "bot", "Agents", "Helpers you train and trust"],
+              ["/app/inbox", "inbox", "Inbox", "Suggestions waiting for you"],
+              ["/app/diary", "book", "Diary", "Everything your agents did"],
+              ["/app/recap", "play", "Weekly recap", "Your week in two minutes"],
+              ["/app/me", "user", "Me", "What OVEREO knows · settings"],
+            ] as const
+          ).map(([h, ic, l, sub]) => (
+            <Link key={h} href={h} className="sheet-link" onClick={onClose}>
+              <Icon name={ic} size={15} />
+              <span>
+                {l}
+                <span className="sheet-sub">{sub}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
         {GROUPS.map((g) => (
           <div key={g} className="sheet-group">
             <span className="sheet-g">{g}</span>

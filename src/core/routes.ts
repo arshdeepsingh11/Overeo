@@ -216,6 +216,8 @@ export function routeIdFor(pathname: string): string {
   const p = pathname.replace(/\/+$/, "") || "/";
   const spec = p.match(/^\/specialties\/([^/]+)/);
   if (spec) return `spec:${spec[1]}`;
+  const app = p.match(/^\/app(?:\/([^/]+))?/);
+  if (app) return `app-${app[1] ?? "today"}`;
   return ROUTES.find((r) => r.path === p)?.id ?? "hero";
 }
 
