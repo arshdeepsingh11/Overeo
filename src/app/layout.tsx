@@ -32,6 +32,9 @@ export const metadata: Metadata = {
   title: { default: "OVEREO — Your body. Your biology. Your future.", template: "%s · OVEREO" },
   description: "OVEREO is a women's precision-health platform. Meet Overeo SI — press O anywhere.",
   applicationName: "OVEREO",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "OVEREO", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
