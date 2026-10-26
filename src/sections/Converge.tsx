@@ -106,13 +106,13 @@ export function Converge() {
           <h2 className="title-lg conv-title">
             Eight streams. <span className="serif grad-text">One reading.</span>
           </h2>
-          <div className="conv-chips" role="tablist" aria-label="Her data streams">
+          <div className="conv-tabs" role="tablist" aria-label="Her data streams">
             {CONVERGE.map((id, i) => (
               <button
                 key={id}
                 role="tab"
                 aria-selected={shown === id}
-                className={`conv-chip ${i < lit || done ? "on" : ""} ${shown === id ? "sel" : ""} ${pinned === id ? "pin" : ""}`}
+                className={`conv-tab ${i < lit || done ? "on" : ""} ${shown === id ? "sel" : ""} ${pinned === id ? "pin" : ""}`}
                 onClick={() => pick(id)}
                 onMouseEnter={() => setHover(id)}
                 onMouseLeave={() => setHover(null)}
@@ -135,9 +135,6 @@ export function Converge() {
             index={idx}
             total={N}
           />
-          <div className="conv-progress" aria-hidden="true">
-            <span style={{ transform: `scaleX(${progress})` }} />
-          </div>
         </div>
         <div className="converge-stage">
           {near ? (
@@ -185,75 +182,74 @@ function ReadingPanel({
   const st = STRENGTH[read.strength];
   const words = read.insight.split(" ");
   return (
-    <div className="glass conv-read" style={{ ["--h" as string]: s.hue }} onMouseEnter={() => onHold(true)} onMouseLeave={() => onHold(false)} aria-live="polite">
-      <div className="conv-read-head">
-        <span className="spop-ic">
-          <Icon name={s.icon} size={18} />
+    <div className="conv-read cr" style={{ ["--h" as string]: s.hue }} onMouseEnter={() => onHold(true)} onMouseLeave={() => onHold(false)} aria-live="polite">
+      <div className={`conv-timer ${auto ? "run" : ""}`} aria-hidden="true" style={{ animationDuration: `${AUTO_MS}ms` }} />
+      <header className="cr-head">
+        <span className="cr-ic">
+          <Icon name={s.icon} size={17} />
         </span>
-        <span className="conv-read-t">
+        <span className="cr-t">
           <b>{s.label}</b>
-          <span className="conv-live">
-            <span className="conv-live-dot" /> SI is reading · <span className={`conv-st ${st.tone}`}>{st.label}</span>
+          <span className={`cr-st ${st.tone}`}>
+            <span className="conv-live-dot" /> {st.label}
           </span>
         </span>
-        <span className="mono small spop-val">{read.value}</span>
-      </div>
+        <span className="cr-metric mono">{read.value}</span>
+      </header>
 
-      <div className="conv-viz">
+      <div className="cr-chart">
         <StreamViz id={id} d={d} f={f} />
       </div>
 
-      <div className="spop-read">
+      <div className="cr-insight">
+        <span className="cr-k">SI reading</span>
         <p className="conv-typed">
           {words.map((w, i) => (
-            <span key={i} style={{ animationDelay: `${Math.min(i, 60) * 18}ms` }}>
+            <span key={i} style={{ animationDelay: `${Math.min(i, 60) * 14}ms` }}>
               {w}{" "}
             </span>
           ))}
         </p>
       </div>
 
-      <div className="conv-links">
-        <span className="spop-k">Connects to</span>
-        <div className="conv-link-row">
-          {LINKS[id].map((l) => (
-            <button key={l.to} className="chip" onClick={() => onPick(l.to)}>
-              <Icon name={STREAMS[l.to].icon} size={12} /> {STREAMS[l.to].label} <span className="faint">· {l.why}</span>
-            </button>
-          ))}
-        </div>
+      <div className="cr-links">
+        <span className="cr-k">Connects to</span>
+        {LINKS[id].map((l) => (
+          <button key={l.to} className="cr-link" onClick={() => onPick(l.to)}>
+            {STREAMS[l.to].label} <span>— {l.why}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="conv-foot">
-        <button className="chip" onClick={() => openSI(s.ask)}>
-          <Icon name="sparkle" size={13} /> Ask SI
-        </button>
-        <Link className="chip" href={s.href}>
-          Open <Icon name="arrow" size={13} />
-        </Link>
-        {s.source.url ? (
-          <a className="conv-src" href={s.source.url} target="_blank" rel="noopener noreferrer" title={`${s.why} — ${s.source.label}`}>
-            <Icon name="doc" size={12} /> Source
-          </a>
-        ) : null}
-        <span className="conv-nav">
+      <footer className="cr-foot">
+        <span className="cr-nav">
           <button className="conv-step" onClick={() => onStep(-1)} aria-label="Previous stream">
             <Icon name="chevron" size={14} style={{ transform: "rotate(180deg)" }} />
           </button>
-          <span className="faint small tnum">
-            {index + 1}/{total}
+          <span className="tnum">
+            {index + 1} / {total}
           </span>
           <button className="conv-step" onClick={() => onStep(1)} aria-label="Next stream">
             <Icon name="chevron" size={14} />
           </button>
+          {pinned && (
+            <button className="cr-resume" onClick={onUnpin}>
+              Resume
+            </button>
+          )}
         </span>
-      </div>
-      <div className={`conv-timer ${auto ? "run" : ""}`} aria-hidden="true" style={{ animationDuration: `${AUTO_MS}ms` }} />
-      {pinned && (
-        <button className="conv-pin faint small" onClick={onUnpin}>
-          <Icon name="pin" size={12} /> Pinned · resume auto
+        {s.source.url && (
+          <a className="cr-src" href={s.source.url} target="_blank" rel="noopener noreferrer" title={`${s.why} — ${s.source.label}`}>
+            Source
+          </a>
+        )}
+        <button className="spop-btn" onClick={() => openSI(s.ask)}>
+          <Icon name="sparkle" size={13} /> Ask SI
         </button>
-      )}
+        <Link className="spop-btn primary" href={s.href}>
+          Open <Icon name="arrow" size={13} />
+        </Link>
+      </footer>
     </div>
   );
 }
@@ -281,7 +277,7 @@ function StreamViz({ id, d, f }: { id: StreamId; d: Derived; f: StreamFacts }) {
   switch (id) {
     case "cycle": {
       const lo = 18;
-      const hi = 40;
+      const hi = 46; // headroom so the caption never touches a bar label
       const bw = (W - 16) / f.lengths.length;
       return (
         <svg viewBox={`0 0 ${W} ${H}`} className="sviz" role="img" aria-label={`Last ${f.lengths.length} cycle lengths`}>

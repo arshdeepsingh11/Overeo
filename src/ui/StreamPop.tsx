@@ -28,37 +28,31 @@ export function StreamPop({ id, onClose }: { id: StreamId; onClose: () => void }
     <div className="spop" style={{ ["--h" as string]: s.hue }}>
       <div className="spop-head">
         <span className="spop-ic">
-          <Icon name={s.icon} size={18} />
+          <Icon name={s.icon} size={16} />
         </span>
-        <b>{s.label}</b>
-        <span className="mono small spop-val">{read.value}</span>
-        <button className="spop-x" onClick={onClose} aria-label="Close">
-          <Icon name="close" size={14} />
-        </button>
+        <span className="spop-t">
+          <b>{s.label}</b>
+          <span className={`spop-st ${st.tone}`}>{st.label}</span>
+        </span>
+        <span className="spop-val mono">{read.value}</span>
       </div>
       <p className="spop-what">{s.what}</p>
-      <div className="spop-read">
-        <span className="spop-k">
-          <Icon name="sparkle" size={12} /> SI reads {d.profile.name} <span className={`badge ${st.tone}`}>{st.label}</span>
-        </span>
-        <p>{read.insight}</p>
-      </div>
-      <div className="spop-why">
-        <span className="spop-k">Why it matters</span>
-        <p>{s.why}</p>
-      </div>
-      <div className="spop-actions">
+      <p className="spop-read">
+        <span className="spop-k">SI · {d.profile.name}</span>
+        {read.insight}
+      </p>
+      <div className="spop-foot">
         {s.source.url ? (
-          <a className="spop-src" href={s.source.url} target="_blank" rel="noopener noreferrer" title={s.source.label}>
-            <Icon name="doc" size={12} /> {s.source.label} <Icon name="external" size={11} />
+          <a className="spop-src" href={s.source.url} target="_blank" rel="noopener noreferrer" title={`${s.why} — ${s.source.label}`}>
+            <Icon name="doc" size={12} /> <span>{s.source.label}</span>
           </a>
         ) : (
-          <span className="spop-src">
-            <Icon name="doc" size={12} /> {s.source.label}
+          <span className="spop-src" title={s.why}>
+            <Icon name="doc" size={12} /> <span>{s.source.label}</span>
           </span>
         )}
         <button
-          className="chip"
+          className="spop-btn"
           onClick={() => {
             onClose();
             openSI(s.ask);
@@ -66,8 +60,8 @@ export function StreamPop({ id, onClose }: { id: StreamId; onClose: () => void }
         >
           <Icon name="sparkle" size={13} /> Ask SI
         </button>
-        <Link className="chip" href={s.href} onClick={onClose}>
-          Open {s.label} <Icon name="arrow" size={13} />
+        <Link className="spop-btn primary" href={s.href} onClick={onClose}>
+          Open <Icon name="arrow" size={13} />
         </Link>
       </div>
     </div>

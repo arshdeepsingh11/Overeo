@@ -177,8 +177,10 @@ export function Marquee3D({ icons, renderInfo }: { icons: MarqueeIcon[]; renderI
               onPointerMove={(e) => {
                 // real movement only — a page scrolling under a resting cursor doesn't open cards
                 if (e.pointerType !== "mouse" || !renderInfo || st.current.pinned) return;
+                // still on the open icon: keep its card open
+                if (active === it.id) return clearTimeout(closeT.current);
                 if (e.movementX === 0 && e.movementY === 0) return;
-                if (active !== it.id) open(it.id);
+                open(it.id);
               }}
               onPointerLeave={(e) => e.pointerType === "mouse" && closeSoon()}
               onFocus={(e) => renderInfo && e.currentTarget.matches(":focus-visible") && open(it.id)}
@@ -199,7 +201,7 @@ export function Marquee3D({ icons, renderInfo }: { icons: MarqueeIcon[]; renderI
       {renderInfo && (
         <div
           ref={pop}
-          className={`mq-pop glass ${active ? "open" : ""}`}
+          className={`mq-pop ${active ? "open" : ""}`}
           role="dialog"
           aria-hidden={!active}
           aria-label={active ? `${icons.find((x) => x.id === active)?.label} details` : undefined}
