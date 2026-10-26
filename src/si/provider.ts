@@ -3,17 +3,45 @@ import { derive } from "../core/derived";
 import { labelFor } from "../core/bus";
 import { localAnswer } from "./engine";
 import type { SIAnswer, SIContext, SIMessage } from "./types";
+import { space } from "../personal/space";
+import { learn, siContext } from "../personal/patterns";
 
 /* ------------------------------------------------------------------ *
- * Provider — local by default. Set NEXT_PUBLIC_SI_ENDPOINT to stream from a
- * live model (see server/si-proxy.mjs). Commands, safety rules and UI
- * actions always run locally so SI can still drive the page.
+ * Provider — Overeo SI's live brain is Xevyo, reached through our own
+ * server route (/api/si) so the key never reaches the browser. Commands,
+ * safety rules and UI actions always run locally, and if Xevyo is
+ * unavailable (offline, quota, not configured) SI answers on-device.
+ * Set NEXT_PUBLIC_SI_LIVE=0 to stay fully on-device.
  * ------------------------------------------------------------------ */
 
 // Next.js inlines NEXT_PUBLIC_* variables at build time.
-const ENDPOINT = process.env.NEXT_PUBLIC_SI_ENDPOINT;
+const ENDPOINT = process.env.NEXT_PUBLIC_SI_LIVE === "0" ? undefined : process.env.NEXT_PUBLIC_SI_ENDPOINT || "/api/si";
 
 export const siMode = ENDPOINT ? "live" : "local";
+
+/** After a failure, don't retry the live brain for a little while. */
+const COOL_KEY = "overeo.si.cool";
+const cooling = () => {
+  try {
+    return Number(sessionStorage.getItem(COOL_KEY) ?? 0) > Date.now();
+  } catch {
+    return false;
+  }
+};
+const coolDown = (ms: number) => {
+  try {
+    sessionStorage.setItem(COOL_KEY, String(Date.now() + ms));
+  } catch {}
+};
+const REASON: Record<string, string> = {
+  quota: "Overeo SI's live brain has reached its usage limit for now",
+  "not-configured": "Overeo SI's live brain isn't connected on this server",
+  auth: "Overeo SI's live brain refused the key",
+  "rate-limited": "Overeo SI is busy",
+  unreachable: "Overeo SI's live brain can't be reached",
+  upstream: "Overeo SI's live brain had a problem",
+  offline: "You're offline",
+};
 
 /** Compact, de-identified context sent to the live model. */
 export function contextPayload(ctx: SIContext) {
@@ -33,6 +61,13 @@ export function contextPayload(ctx: SIContext) {
         }
       : null,
     signals: ctx.useSignals ? d.signals.map((x) => ({ title: x.title, level: x.level, strength: x.strength, evidence: x.evidence })) : null,
+    // what OVEREO has learned about HER (her own space, or Maya's sample)
+    personal: (() => {
+      const sp = space.get();
+      if (!sp.ready) return null;
+      const base = siContext(sp, learn(sp));
+      return ctx.useProfile && sp.account?.consent.personalise !== false ? base : { language: base.language };
+    })(),
   };
 }
 
@@ -51,6 +86,12 @@ export async function ask(
   const local = localAnswer(q, ctx);
   const isCommand = !!local.effects?.length;
   if (!ENDPOINT || isCommand || local.tone === "alert") return { answer: local, remote: false };
+  const fallback = (reason: string) => ({
+    answer: { ...local, limits: [local.limits, `${REASON[reason] ?? REASON.upstream} — answered on this device.`].filter(Boolean).join(" ") },
+    remote: false,
+  });
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return fallback("offline");
+  if (cooling()) return fallback("upstream");
 
   try {
     const res = await fetch(ENDPOINT, {
@@ -65,7 +106,11 @@ export async function ask(
       }),
       signal,
     });
-    if (!res.ok || !res.body) throw new Error(`SI endpoint ${res.status}`);
+    if (!res.ok || !res.body) {
+      const info = (await res.json().catch(() => ({}))) as { reason?: string };
+      coolDown(info.reason === "quota" ? 10 * 60_000 : 2 * 60_000);
+      return fallback(info.reason ?? "upstream");
+    }
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let text = "";
@@ -82,12 +127,13 @@ export async function ask(
         title: local.title.startsWith("Let me point") ? "Overeo SI" : local.title,
         summary: text.trim(),
         points: undefined,
-        used: [...new Set(["Live model", ...local.used])],
+        used: [...new Set(["Overeo SI · Xevyo", ...local.used])],
         missing: undefined,
       },
     };
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    return { answer: { ...local, limits: [local.limits, "Live model unavailable — answered locally."].filter(Boolean).join(" ") }, remote: false };
+    coolDown(2 * 60_000);
+    return fallback("unreachable");
   }
 }

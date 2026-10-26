@@ -208,7 +208,7 @@ export function OvereoSI() {
               <div className="si-name">
                 Overeo <span className="serif">SI</span>
               </div>
-              <div className="si-sub">Symbiotic Intelligence · {siMode === "live" ? "live model" : "on-device"}</div>
+              <div className="si-sub">Symbiotic Intelligence · {siMode === "live" ? "Xevyo live" : "on-device"}</div>
             </div>
           </div>
           <div className="si-head-actions">
@@ -442,6 +442,11 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
                 </button>
               ))}
             </div>
+          )}
+          {!msg.remote && siMode === "live" && /answered on this device/i.test(a.limits ?? "") && (
+            <p className="si-fallback">
+              <Icon name="wifioff" size={13} /> {a.limits?.split(/(?<=\.)\s/).pop()}
+            </p>
           )}
           <Grounding a={a} remote={!!msg.remote} />
         </div>
