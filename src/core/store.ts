@@ -1,5 +1,5 @@
 import { useSyncExternalStore, useRef } from "react";
-import { createPersona, type Profile } from "./persona";
+import { createPersona, RENDER_ANCHOR, type Profile } from "./persona";
 
 /* ------------------------------------------------------------------ *
  * A tiny global store. Everything on the page reads from ONE profile,
@@ -121,7 +121,8 @@ let state: State = {
   siSeed: null,
   siListen: false,
   activeSection: "hero",
-  profile: createPersona(),
+  // fixed reference day for the first (server + hydration) render — see RENDER_ANCHOR
+  profile: createPersona(RENDER_ANCHOR),
   insights: [],
   toasts: [],
   levers: { strength: false, sleep: false, iron: false, menoCare: false, nutrition: false },

@@ -78,9 +78,17 @@ export function phaseFor(day: number, length: number): Phase {
   return "luteal";
 }
 
-export function createPersona(): Profile {
+/**
+ * The server pre-renders pages once (at build time) and the browser
+ * hydrates them later, possibly on another day or in another timezone.
+ * The very first render therefore uses this fixed reference day on both
+ * sides; hydrateStore() then switches to the visitor's real today.
+ */
+export const RENDER_ANCHOR = new Date(2026, 9, 20, 12);
+
+export function createPersona(ref: Date = new Date()): Profile {
   const rnd = mulberry32(20261018);
-  const today = startOfDay();
+  const today = startOfDay(ref);
 
   // Lay cycles backwards from today.
   const currentStart = addDays(today, -(CURRENT_DAY - 1));

@@ -22,8 +22,14 @@ export function startOfDay(d = new Date()) {
   return x;
 }
 
-export const addDays = (d: Date, n: number) => new Date(d.getTime() + n * DAY);
-export const daysBetween = (a: Date, b: Date) => Math.round((b.getTime() - a.getTime()) / DAY);
+/** Calendar-day arithmetic: safe across daylight-saving changes (adding 24 h is not). */
+export const addDays = (d: Date, n: number) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+/** Whole calendar days from a to b, in local time (DST-safe). */
+export const daysBetween = (a: Date, b: Date) => Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / DAY);
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const fmtDate = (d: Date) => `${d.getDate()} ${MONTHS[d.getMonth()]}`;
