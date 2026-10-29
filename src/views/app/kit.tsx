@@ -14,8 +14,7 @@ import { tick } from "../../lib/audio";
 export function AppPage({ title, sub, icon, actions, children, wide = false }: { title: string; sub?: string; icon?: IconName; actions?: ReactNode; children: ReactNode; wide?: boolean }) {
   return (
     <section className={`app-page ${wide ? "wide" : ""}`}>
-      <div className="wrap app-wrap">
-        <SpaceBanner />
+      <div className="app-wrap">
         <header className="app-head">
           <div>
             <h1 className="app-title">

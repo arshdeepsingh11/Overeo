@@ -166,10 +166,12 @@ export function NavDock() {
     navigate(href);
   };
   const current = sheet ? "more" : navIdFor(path);
+  // her portal (/app) has its own sidebar; the public navbar stays on the public site
+  const inPortal = /^\/app(\/|$)/.test(path) && !path.startsWith("/app/welcome");
   return (
     <>
       {sheet && <SectionsSheet onClose={() => setSheet(false)} />}
-      <SparkleNav
+      {!inPortal && <SparkleNav
         active={current}
         items={[
           { id: "home", label: t("nav.home"), onSelect: go("/") },
@@ -190,7 +192,7 @@ export function NavDock() {
             </button>
           </>
         }
-      />
+      />}
       <MobileTabBar sheet={sheet} path={path} />
     </>
   );

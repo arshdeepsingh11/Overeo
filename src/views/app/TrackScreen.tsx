@@ -237,7 +237,17 @@ function TrackerForm({ kind, record, onDone }: { kind: Kind; record?: AnyRecord;
     </label>
   );
 
-  if (kind === "period_start") return <PeriodForm save={save} when={When} setWhen={setWhen} initial={(v?.flow as 1) ?? 3} isEdit={!!record} />;
+  if (kind === "period_start") {
+    // another period start within 10 days of this one is almost always the same period
+    const chosen = new Date(when);
+    const near = records
+      .filter((r) => r.type === "period_start" && usable(r) && r.id !== record?.id)
+      .map((r) => new Date(r.observedAt))
+      .map((d) => ({ d, days: Math.round((chosen.getTime() - d.getTime()) / 86_400_000) }))
+      .filter((x) => Math.abs(x.days) <= 10)
+      .sort((a, b) => Math.abs(a.days) - Math.abs(b.days))[0];
+    return <PeriodForm save={save} when={When} setWhen={setWhen} initial={(v?.flow as 1) ?? 3} isEdit={!!record} near={near} />;
+  }
   if (kind === "mood")
     return (
       <div className="form">
@@ -263,8 +273,23 @@ function TrackerForm({ kind, record, onDone }: { kind: Kind; record?: AnyRecord;
   return <LabForm when={When} initial={v as { testName: string; value: number } | undefined} onSave={(l) => save("lab_result", l, `${l.testName} ${l.value} ${l.unit}`)} />;
 }
 
-function PeriodForm({ save, when, setWhen, initial, isEdit }: { save: <K extends MeasurementType>(t: K, v: ValueMap[K], l: string) => void; when: React.ReactNode; setWhen: (s: string) => void; initial: 1 | 2 | 3 | 4; isEdit: boolean }) {
+function PeriodForm({
+  save,
+  when,
+  setWhen,
+  initial,
+  isEdit,
+  near,
+}: {
+  save: <K extends MeasurementType>(t: K, v: ValueMap[K], l: string) => void;
+  when: React.ReactNode;
+  setWhen: (s: string) => void;
+  initial: 1 | 2 | 3 | 4;
+  isEdit: boolean;
+  near?: { d: Date; days: number };
+}) {
   const [flow, setFlow] = useState<1 | 2 | 3 | 4>(initial);
+  const [sure, setSure] = useState(false);
   const quick = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() - days);
@@ -295,9 +320,29 @@ function PeriodForm({ save, when, setWhen, initial, isEdit }: { save: <K extends
           </button>
         ))}
       </div>
-      <button className="btn" onClick={() => save("period_start", { flow }, "Period started")}>
-        <Icon name="check" size={16} /> {isEdit ? "Save correction" : "Period started"}
-      </button>
+      {near && !sure ? (
+        <div className="dup-note" role="alert">
+          <b>
+            You already logged a period starting {fmtDate(near.d)}
+            {near.days === 0 ? " — the same day." : ` — ${Math.abs(near.days)} day${Math.abs(near.days) === 1 ? "" : "s"} ${near.days > 0 ? "before" : "after"} this.`}
+          </b>
+          <span>If it's the same period, there's nothing new to log here (log pain or heaviness under Symptoms). Two starts this close would also skew your cycle length.</span>
+          <div className="dup-actions">
+            <button className="btn sm" onClick={() => setSure(true)}>
+              It's a new period
+            </button>
+            {!isEdit && (
+              <button className="btn ghost sm" onClick={() => save("period_end", {}, "Period ended")}>
+                Log that my period ended
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <button className="btn" onClick={() => save("period_start", { flow }, "Period started")}>
+          <Icon name="check" size={16} /> {isEdit ? "Save correction" : "Period started"}
+        </button>
+      )}
       {!isEdit && (
         <button className="btn ghost" onClick={() => save("period_end", {}, "Period ended")}>
           My period ended
