@@ -43,11 +43,19 @@ export function SuggestionCard({ s }: { s: Suggestion }) {
         </label>
       )}
       {why && (
-        <ul className="sg-why">
-          {s.why.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
+        <div className="sg-whybox">
+          <span className="sg-whyhead">From your data</span>
+          <ul className="sg-why">
+            {s.why.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+          {s.worded && s.plainBody && (
+            <p className="faint small sg-worded">
+              <Icon name="sparkle" size={12} /> Worded by the live brain from these facts, checked so no number changed. Original: “{s.plainBody}”
+            </p>
+          )}
+        </div>
       )}
       {asking ? (
         <div className="sg-reasons" role="group" aria-label="Why not?">

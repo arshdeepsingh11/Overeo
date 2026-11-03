@@ -12,6 +12,8 @@ import { correctMemory, deleteMySpace, exportMySpace, forgetMemory, resetSample,
 import { useT } from "../../personal/useT";
 import type { Goal, Lang, MemoryItem } from "../../personal/types";
 import { AppPage, Card, KeyPad, Sheet, Switch } from "./kit";
+import { AUTH_MODE, getSession, signOutEmail } from "../../auth/otp";
+import { pushConfigured, pushSupport, subscribePush, testPush, unsubscribePush } from "../../personal/push";
 
 const AREA: Record<MemoryItem["area"], string> = { cycle: "Cycle", mood: "Mood", sleep: "Sleep", body: "Body", labs: "Labs", habits: "Habits", preferences: "Preferences", goals: "Goals" };
 
@@ -28,6 +30,9 @@ export function MeScreen() {
   const [tell, setTell] = useState("");
   const [pinOpen, setPinOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [session, setSession] = useState(() => getSession());
+  const [pushNote, setPushNote] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const grouped = Object.entries(
     l.memory.reduce<Record<string, MemoryItem[]>>((acc, m) => {
@@ -93,6 +98,38 @@ export function MeScreen() {
         </Card>
 
         <div className="me-side">
+          {mode === "real" && own && AUTH_MODE !== "none" && (
+            <Card title="Account" icon="mail">
+              {session ? (
+                <div className="set-row">
+                  <span>
+                    Signed in as <b>{session.email}</b>
+                    <span className="faint small set-sub">Your health data stays on this device until sync is switched on.</span>
+                  </span>
+                  <button
+                    className="btn ghost sm"
+                    onClick={async () => {
+                      await signOutEmail();
+                      setSession(null);
+                      toast("Signed out of email — your space stays on this device");
+                    }}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="set-row">
+                  <span>
+                    Protect your space with your email
+                    <span className="faint small set-sub">A 6-digit code, no password.</span>
+                  </span>
+                  <Link className="btn sm" href="/app/signin">
+                    Sign in
+                  </Link>
+                </div>
+              )}
+            </Card>
+          )}
           {mode === "real" && own && (
             <Card title="About you" icon="user">
               <span className="form-k">Focus</span>
@@ -157,14 +194,47 @@ export function MeScreen() {
               <Switch
                 on={prefs.notifications}
                 onChange={async (v) => {
-                  if (!v) return setPrefs({ notifications: false });
+                  setPushNote(null);
+                  if (!v) {
+                    setPrefs({ notifications: false });
+                    void unsubscribePush();
+                    return;
+                  }
                   const ok = await enableNotifications();
                   setPrefs({ notifications: ok });
-                  toast(ok ? "Notifications on" : "Notifications are blocked in your browser settings");
+                  if (!ok) return toast("Notifications are blocked in your browser settings");
+                  // also reach her when OVEREO is closed, where the device supports it
+                  const sup = pushSupport();
+                  if (pushConfigured && sup.ok) {
+                    const r = await subscribePush();
+                    setPushNote(r.ok ? null : r.why);
+                    toast(r.ok ? "Notifications on — even when OVEREO is closed" : "Notifications on while OVEREO is open");
+                  } else {
+                    setPushNote(sup.why ?? null);
+                    toast("Notifications on while OVEREO is open");
+                  }
                 }}
                 label={t("me.notifications")}
               />
             </div>
+            {prefs.notifications && pushConfigured && pushSupport().ok && (
+              <div className="set-row">
+                <span className="faint small">Check it works: tap, then close OVEREO — it arrives in a few seconds.</span>
+                <button
+                  className="btn ghost sm"
+                  disabled={testing}
+                  onClick={async () => {
+                    setTesting(true);
+                    const r = await testPush(prefs.discreet);
+                    setTesting(false);
+                    toast(r.ok ? "Test sent" : (r.why ?? "Couldn't send the test"));
+                  }}
+                >
+                  <Icon name="bell" size={14} /> {testing ? "Sending…" : "Send a test"}
+                </button>
+              </div>
+            )}
+            {pushNote && <p className="faint small">{pushNote}</p>}
             <div className="set-row">
               <span>
                 <Icon name={theme === "dark" ? "moon" : "sun"} size={15} /> Appearance
@@ -182,6 +252,9 @@ export function MeScreen() {
 
           <Card title="Your data" icon="shield">
             <div className="data-actions">
+              <Link className="btn ghost sm" href="/app/visit">
+                <Icon name="doc" size={14} /> Visit summary
+              </Link>
               <button
                 className="btn ghost sm"
                 onClick={() => {

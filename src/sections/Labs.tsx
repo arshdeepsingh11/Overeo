@@ -14,7 +14,7 @@ import { Icon } from "../ui/Icon";
  * ------------------------------------------------------------------ */
 
 const ROAD: { y: string; t: string; d: string; s: "live" | "research" | "vision" }[] = [
-  { y: "2026", t: "Female intelligence layer", d: "Cycle-aware reading of every lab and wearable. Overeo SI.", s: "live" },
+  { y: "2026", t: "Female intelligence layer", d: "Cycle-aware reading of every lab and log. Overeo SI.", s: "live" },
   { y: "2027", t: "Silent Signals, validated", d: "Pattern detection studied with in-house clinicians before clinical use.", s: "research" },
   { y: "2028", t: "Every period becomes data", d: "Needle-free monthly biomarkers from menstrual fluid, analysed by BioAro Labs.", s: "research" },
   { y: "2030", t: "Female Dose Lens", d: "Sex, pharmacogenomics and life stage in every medicine conversation.", s: "vision" },

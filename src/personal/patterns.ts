@@ -1,6 +1,7 @@
 import { phaseFor, type Phase } from "../core/persona";
 import { usable, type SpaceState } from "./space";
 import type { AnyRecord, HealthRecord, MemoryItem } from "./types";
+import { predictCycle, type CyclePrediction } from "./mind/cycle";
 
 /* =====================================================================
    What OVEREO has learned about HER — computed only from her confirmed,
@@ -31,6 +32,8 @@ export interface CycleState {
   phase: Phase | null;
   /** cycles still needed before predictions are personal */
   needed: number;
+  /** the full prediction: window, ovulation, regularity, confidence */
+  pred: CyclePrediction;
 }
 
 export interface Learned {
@@ -74,7 +77,10 @@ export function learn(s: SpaceState, now = new Date()): Learned {
   const avg = lengths.length >= 2 ? r1(mean(lengths.slice(-6))) : lengths.length === 1 ? lengths[0] : fallback;
   const last = starts[starts.length - 1] ?? null;
   const day = last ? dayDiff(now, last) + 1 : null;
-  const nextStart = last && avg ? new Date(last.getFullYear(), last.getMonth(), last.getDate() + Math.round(avg)) : null;
+  const ends = byType(rs, "period_end").map((r) => startOf(new Date(r.observedAt)));
+  // the prediction itself is recency-weighted and uses her variability
+  const pred = predictCycle(starts, lengths, { typical: fallback, ends });
+  const nextStart = last && avg ? pred.next : null;
   const cycle: CycleState = {
     starts,
     lengths,
@@ -83,8 +89,9 @@ export function learn(s: SpaceState, now = new Date()): Learned {
     day,
     nextStart,
     daysUntil: nextStart ? dayDiff(nextStart, now) : null,
-    phase: day && avg && day <= avg + 10 ? phaseFor(day, Math.round(avg)) : null,
+    phase: day && avg && day <= avg + 10 ? phaseFor(day, Math.round(pred.length)) : null,
     needed: Math.max(0, 3 - lengths.length),
+    pred,
   };
   if (lengths.length >= 2)
     push({

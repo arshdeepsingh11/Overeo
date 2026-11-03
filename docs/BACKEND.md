@@ -87,3 +87,39 @@ Health data must **not** go into Shopify customer metafields. Keep it in Option 
 | Security | Encryption at rest and in transit, audit log (diary), rate limits at the gateway, a penetration test |
 | AI | Xevyo zero-retention for health data, confirmed in writing; evaluation set (`scripts/xevyo-probe.mjs`) run before each release |
 | Clinical | Clinician review of every agent rule and every translated string |
+
+---
+
+## Email sign-in with a code (built — switch it on)
+
+The app already has the screens (`/app/signin`) and the client (`src/auth/otp.ts`). Pick one option:
+
+**Supabase (fastest)**
+1. Create a project, then copy the Project URL and anon key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+2. Go to Authentication → Email Templates → "Magic Link" and include `{{ .Token }}` so the email shows the 6-digit code.
+3. Set up a custom SMTP sender (e.g. Resend) for production volumes.
+
+**Custom API** — set `NEXT_PUBLIC_DATA_BACKEND=rest` and implement:
+
+| Method | Path | Body → returns |
+|---|---|---|
+| POST | `/v1/auth/code` | `{email}` → 204 (rate-limit per email and per IP) |
+| POST | `/v1/auth/verify` | `{email, code}` → `{userId, email, accessToken, refreshToken, expiresIn}` |
+| POST | `/v1/auth/refresh` | `{refreshToken}` → `{accessToken, refreshToken, expiresIn}` |
+| POST | `/v1/auth/signout` | (Bearer) → 204 |
+
+If neither is set, sign-in stays hidden and everything works on the device.
+
+## Notifications when OVEREO is closed (built — needs a scheduler)
+
+- Keys: `node scripts/vapid-keys.mjs` → `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_SEND_SECRET` (already in `.env.local`).
+- `POST /api/push/test` sends a real test push now (Me → Notifications → "Send a test").
+- To deliver reminders on time, the backend:
+  1. Accepts `POST /v1/push/subscribe` `{subscription, timezone, reminders:[{id,due,title,body,url}]}` and `POST /v1/push/unsubscribe` `{endpoint}`. The app syncs these automatically when she's signed in.
+  2. Runs every minute, finds due reminders, and calls `POST /api/push/send` with `Authorization: Bearer <PUSH_SEND_SECRET>` and `{subscription,title,body,url,tag}`. Delete subscriptions that return `gone`.
+- Discreet mode sends neutral wording ("OVEREO · You have a reminder").
+- iPhone: works when OVEREO is added to the Home Screen (iOS 16.4+).
+
+## Ordering BioAro Labs tests (built — needs the token)
+
+Set `NEXT_PUBLIC_SHOPIFY_DOMAIN` and `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN`. "Order" then creates a Shopify cart and opens BioAro's own checkout. Payment never happens inside OVEREO. Without the token, "Order" opens the test page on bioarolabs.com.

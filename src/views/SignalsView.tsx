@@ -28,7 +28,7 @@ export function SignalsView({ initialTab }: { initialTab?: string }) {
               {shown.length} pattern{shown.length === 1 ? "" : "s"} <span className="serif grad-text">worth a conversation.</span>
             </>
           }
-          lede={`Read across ${d.profile.logs.length} days of her entries, labs and wearables. Strength means how consistently a pattern repeats — never the probability of a disease.`}
+          lede={`Read across ${d.profile.logs.length} days of her entries and labs. Strength means how consistently a pattern repeats — never the probability of a disease.`}
         />
       }
       narration={{
@@ -59,7 +59,7 @@ function Method() {
         {[
           { t: "1 · Align to the cycle", d: "Every day is dated to her own cycle phase, learned from temperature and logs — not a textbook 28 days." },
           { t: "2 · Look for repeats", d: "A signal counts how many cycles show the same cluster (e.g. severe pain + bowel pain + heavy flow)." },
-          { t: "3 · Cross-check sources", d: "Logs are checked against labs and wearables — falling ferritin backs up heavy flow and fatigue." },
+          { t: "3 · Cross-check sources", d: "Logs are checked against each other and her labs — falling ferritin backs up heavy flow and fatigue." },
           { t: "4 · Route to a person", d: "Each pattern names a team, the questions to ask, and a next step. SI never stops at a warning." },
         ].map((x) => (
           <div key={x.t} className="glass feat-card">

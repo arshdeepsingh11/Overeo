@@ -8,6 +8,7 @@ import { checkDueReminders, runAgents } from "../personal/actions";
 import { unlock, watchAutoLock } from "../personal/lock";
 import { useT } from "../personal/useT";
 import { KeyPad } from "../views/app/kit";
+import { syncReminders } from "../personal/push";
 
 /* =====================================================================
    Runs once in the app shell:
@@ -33,8 +34,16 @@ export function SpaceRuntime() {
     let deb = 0;
     let lastRecords = space.get().records;
     let lastAgents = space.get().agents;
+    let lastReminders = space.get().reminders;
+    let push = 0;
     const unsub = space.subscribe(() => {
       const s = space.get();
+      // closed-app reminders: keep the backend's copy in step (only her own space, only when she turned notifications on)
+      if (s.reminders !== lastReminders) {
+        lastReminders = s.reminders;
+        clearTimeout(push);
+        if (s.mode === "real" && s.prefs.notifications) push = window.setTimeout(() => void syncReminders(space.get().reminders, space.get().prefs.discreet), 1500);
+      }
       if (s.records === lastRecords && s.agents === lastAgents) return;
       lastRecords = s.records;
       lastAgents = s.agents;
@@ -49,6 +58,7 @@ export function SpaceRuntime() {
       stop();
       unsub();
       clearTimeout(deb);
+      clearTimeout(push);
       clearInterval(tick);
     };
   }, []);

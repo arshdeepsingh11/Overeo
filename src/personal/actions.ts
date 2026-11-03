@@ -2,8 +2,10 @@ import { useMemo } from "react";
 import { navigate } from "../core/routes";
 import { toast } from "../core/store";
 import { agentById, isQuiet, reconcile } from "./agents";
-import { learn, type Learned } from "./patterns";
+import type { Learned } from "./patterns";
 import { addReminder, bumpFeedback, diary, setInbox, space, updateReminder, useSpace } from "./space";
+import { model } from "./mind";
+import { liveReady, wordLive } from "./mind/live";
 import type { Suggestion } from "./types";
 
 /* ------------------------------------------------------------------ *
@@ -18,17 +20,47 @@ export function useLearned(): Learned {
   const feedback = useSpace((s) => s.feedback);
   const overrides = useSpace((s) => s.overrides);
   const told = useSpace((s) => s.told);
+  // the same cached model SI and the agents use — computed once per change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => learn(space.get()), [records, account, feedback, overrides, told]);
+  return useMemo(() => model(space.get()).learned, [records, account, feedback, overrides, told]);
 }
 
 /** Let every enabled agent look at her data and update the inbox. */
 export function runAgents() {
   const s = space.get();
   if (!s.ready) return;
-  const next = reconcile(s, learn(s));
+  const m = model(s);
+  const next = reconcile(s, m.learned, new Date(), m.insights);
   const changed = next.length !== s.inbox.length || next.some((x, i) => x.id !== s.inbox[i]?.id || x.status !== s.inbox[i]?.status);
   if (changed) setInbox(next);
+  void personalise();
+}
+
+let wording = false;
+/**
+ * Let the live brain word new suggestions more personally — a couple at a
+ * time, checked so no number is added or lost. On-device wording stays if
+ * anything fails.
+ */
+async function personalise() {
+  if (wording || !liveReady()) return;
+  const s = space.get();
+  if (s.account?.consent.personalise === false) return;
+  const todo = s.inbox.filter((x) => x.status === "pending" && !x.worded && !x.plainBody).slice(0, 2);
+  if (!todo.length) return;
+  wording = true;
+  try {
+    for (const sg of todo) {
+      const ns = space.get().ns;
+      const text = await wordLive({ title: sg.title, body: sg.body, why: sg.why }, s.prefs.lang);
+      const cur = space.get();
+      if (cur.ns !== ns) return; // she switched space meanwhile
+      setInbox(cur.inbox.map((x) => (x.id === sg.id ? (text ? { ...x, body: text, worded: true, plainBody: x.body } : { ...x, plainBody: x.body }) : x)));
+      if (!text) break;
+    }
+  } finally {
+    wording = false;
+  }
 }
 
 export function approve(id: string, edit?: { due?: string; title?: string }) {

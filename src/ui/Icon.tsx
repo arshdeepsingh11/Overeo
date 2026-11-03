@@ -68,6 +68,9 @@ const P: Record<string, string> = {
   spark: "M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2L19 19M5 19l2.8-2.8M16.2 7.8L19 5",
   calendar: "M4.5 6h15v14h-15zM4.5 10h15M8.5 3.5v4M15.5 3.5v4",
   target: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 16.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zM12 12h.01",
+  alert: "M12 4l9 15.5H3L12 4zM12 10v4.5M12 17.2h.01",
+  mail: "M3.5 6h17v12h-17zM3.5 6l8.5 7 8.5-7",
+  cart: "M3 4.5h2.5l2 10.5h10l2-7.5H7M9.5 19.5h.01M16.5 19.5h.01",
 };
 
 export type IconName = keyof typeof P;

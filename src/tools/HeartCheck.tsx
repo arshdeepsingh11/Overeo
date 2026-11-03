@@ -112,7 +112,7 @@ export function HeartCheck() {
         </Field>
       </div>
       <p className="faint small">
-        From her wearable: resting heart rate {rhrThen} → {rhrNow} bpm over six months{rhrNow - rhrThen >= 2 ? " — a gentle rise worth watching alongside iron and sleep." : "."}
+        From her logged readings: resting heart rate {rhrThen} → {rhrNow} bpm over six months{rhrNow - rhrThen >= 2 ? " — a gentle rise worth watching alongside iron and sleep." : "."}
       </p>
       <div className="tool-foot">
         <button className="btn" onClick={run}>

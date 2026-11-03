@@ -335,7 +335,7 @@ const TOPICS: Intent[] = [
       const { p } = data(ctx);
       return {
         title: "What I read — together",
-        summary: "Eight streams converge: cycle logs, wearable temperature and heart rate, sleep, BioAro lab results, genome flags, microbiome, symptoms she describes, and clinician notes from BioEMR.",
+        summary: "Eight streams converge: cycle logs, waking temperature and heart rate, sleep, BioAro lab results, genome flags, microbiome, symptoms she describes, and clinician notes from BioEMR.",
         points: ctx.useProfile ? [`${p.logs.length} days of entries`, `${p.labs.length} lab series`, `${p.genome.length} genome flags, ${p.microbiome.length} microbiome results`] : undefined,
         used: ctx.useProfile ? ["Her profile"] : ["General knowledge"],
         actions: [{ label: "Watch them converge", icon: "layers", cmds: [{ type: "goto", section: "converge" }] }],
@@ -841,7 +841,7 @@ function traceFor(id: string, ctx: SIContext): string[] {
   const base = ["Understanding the question"];
   if (["theme", "mood", "space", "ar", "goto"].includes(id)) return ["Understanding the request", "Updating the interface"];
   if (!ctx.useProfile) return [...base, "Using general knowledge only"];
-  if (["endo", "iron", "pcos", "sleep", "diagnose"].includes(id)) return [...base, `Reading ${n} days of entries`, "Cross-checking labs and wearables", "Scoring pattern consistency"];
+  if (["endo", "iron", "pcos", "sleep", "diagnose"].includes(id)) return [...base, `Reading ${n} days of entries`, "Cross-checking labs and logs", "Scoring pattern consistency"];
   if (["clock", "amh", "egg", "set-amh", "set-age", "set-fsh"].includes(id)) return [...base, "Reading AMH, FSH and cycle rhythm", "Recomputing the Ovarian Clock"];
   if (["today", "lens"].includes(id)) return [...base, "Learning her cycle shape", "Projecting the next 35 days"];
   if (["futures", "lever"].includes(id)) return [...base, "Running both trajectories to age 80"];

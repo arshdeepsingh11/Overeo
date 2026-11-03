@@ -11,6 +11,7 @@ import { useT } from "../../personal/useT";
 import { PHASE_META } from "../../core/engines/forecast";
 import { SuggestionCard } from "./AgentsScreens";
 import { AppPage, Card, fmtDate, fmtTime } from "./kit";
+import { ForYouCard, WhatIfCard } from "./MindCards";
 
 /* =====================================================================
    Today — her home. Who she is today (cycle day, what's coming), what
@@ -109,6 +110,10 @@ export function TodayScreen() {
             </div>
           </div>
         </Card>
+
+        {/* OVEREO Mind: what matters now, and a what-if */}
+        <ForYouCard />
+        <WhatIfCard />
 
         {/* quick log */}
         <Card className="today-quick" title={t("today.quickLog")} icon="plus">

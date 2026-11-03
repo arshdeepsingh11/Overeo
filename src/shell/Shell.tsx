@@ -167,7 +167,7 @@ export function NavDock() {
   };
   const current = sheet ? "more" : navIdFor(path);
   // her portal (/app) has its own sidebar; the public navbar stays on the public site
-  const inPortal = /^\/app(\/|$)/.test(path) && !path.startsWith("/app/welcome");
+  const inPortal = /^\/app(\/|$)/.test(path) && !/^\/app\/(welcome|signin)/.test(path);
   return (
     <>
       {sheet && <SectionsSheet onClose={() => setSheet(false)} />}
@@ -277,6 +277,7 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
               ["/app/inbox", "inbox", "Inbox", "Suggestions waiting for you"],
               ["/app/diary", "book", "Diary", "Everything your agents did"],
               ["/app/recap", "play", "Weekly recap", "Your week in two minutes"],
+              ["/app/visit", "doc", "Visit summary", "One page for your doctor"],
               ["/app/me", "user", "Me", "What OVEREO knows · settings"],
             ] as const
           ).map(([h, ic, l, sub]) => (

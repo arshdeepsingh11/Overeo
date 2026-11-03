@@ -21,7 +21,7 @@ const DEMO: { q: string; a: string }[] = [
 
 const CAPS: { icon: IconName; t: string; d: string }[] = [
   { icon: "eye", t: "Knows where you are", d: "Opens with the section you came from as context." },
-  { icon: "layers", t: "Reads everything together", d: "Cycle, labs, genome, wearables — one answer." },
+  { icon: "layers", t: "Reads everything together", d: "Cycle, labs, genome, symptoms — one answer." },
   { icon: "bolt", t: "Acts when you ask", d: "Changes the page, runs simulations, drafts plans." },
   { icon: "shield", t: "Shows its working", d: "What it used, what it didn't have, its limits." },
 ];

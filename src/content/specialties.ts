@@ -49,7 +49,7 @@ export interface Specialty {
 }
 
 const PATH_DEFAULT = (team: string): Specialty["path"] => [
-  { title: "Notice", text: "Your entries, wearables and labs are read together. Patterns surface on their own — you don't have to know what to ask." },
+  { title: "Notice", text: "Your entries and labs are read together. Patterns surface on their own — you don't have to know what to ask." },
   { title: "Prepare", text: "Overeo SI turns the pattern into a one-page dossier: what was seen, for how long, and the questions worth asking." },
   { title: "Visit", text: `A clinician from ${team} sees you virtually or in clinic, with the dossier already in their record (BioEMR).` },
   { title: "Plan", text: "Tests are ordered only when they change a decision. Results flow back into your timeline and the plan updates." },

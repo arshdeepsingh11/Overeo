@@ -28,6 +28,11 @@ import {
    write goes through the namespaced db, so the two never mix.
    ===================================================================== */
 
+export interface MindMemory {
+  topics: Record<string, number>;
+  votes: Record<string, { up: number; down: number }>;
+}
+
 export interface SpaceState {
   ready: boolean;
   mode: SpaceMode;
@@ -44,6 +49,8 @@ export interface SpaceState {
   overrides: MemoryOverride[];
   told: MemoryItem[];
   feedback: Record<string, number>;
+  /** what OVEREO Mind has learned from how she uses it: topics she asks about, answers she found (un)helpful */
+  mind: MindMemory;
   prefs: Prefs;
   locked: boolean;
 }
@@ -64,6 +71,7 @@ let state: SpaceState = {
   overrides: [],
   told: [],
   feedback: {},
+  mind: { topics: {}, votes: {} },
   prefs: DEFAULT_PREFS,
   locked: false,
 };
@@ -132,6 +140,7 @@ function openNamespace(mode: SpaceMode) {
       return { overrides: mem.overrides ?? [], told: mem.told ?? [] };
     })(),
     feedback: load<Record<string, number>>(ns, "feedback", {}),
+    mind: { topics: {}, votes: {}, ...load<Partial<MindMemory>>(ns, "mind", {}) },
   });
   saveMeta({ ...loadMeta(), mode: state.mode, accountId: own?.id ?? null });
 }
@@ -188,6 +197,9 @@ export function deleteMySpace() {
   if (!state.own) return;
   wipe(realNs(state.own.id));
   setPrefs({ lock: null });
+  // forget the email sign-in and push address on this device too
+  save(DEVICE, "auth", null);
+  save(DEVICE, "push", null);
   signOut();
 }
 
@@ -203,6 +215,7 @@ export function exportMySpace() {
       diary: s.diary,
       agents: s.agents,
       memory: { overrides: s.overrides, told: s.told },
+      mind: s.mind,
     },
     null,
     2,
@@ -335,6 +348,20 @@ export function bumpFeedback(key: string) {
   const feedback = { ...state.feedback, [key]: (state.feedback[key] ?? 0) + 1 };
   save(state.ns, "feedback", feedback);
   space.set({ feedback });
+}
+
+/** Mind learns what she cares about (topics) and which answers help her (votes). */
+export function noteTopic(topic: string) {
+  const mind = { ...state.mind, topics: { ...state.mind.topics, [topic]: (state.mind.topics[topic] ?? 0) + 1 } };
+  save(state.ns, "mind", mind);
+  space.set({ mind });
+}
+
+export function voteAnswer(topic: string, up: boolean) {
+  const v = state.mind.votes[topic] ?? { up: 0, down: 0 };
+  const mind = { ...state.mind, votes: { ...state.mind.votes, [topic]: up ? { ...v, up: v.up + 1 } : { ...v, down: v.down + 1 } } };
+  save(state.ns, "mind", mind);
+  space.set({ mind });
 }
 
 /* -------------------------------- agents -------------------------------- */

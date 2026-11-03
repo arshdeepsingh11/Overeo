@@ -16,7 +16,7 @@ import { SCHEMA_VERSION } from "./types";
 const ROOT = "overeo.p1";
 const META = `${ROOT}.meta`;
 
-export type Collection = "records" | "account" | "agents" | "inbox" | "diary" | "reminders" | "memory" | "prefs" | "feedback" | "outbox";
+export type Collection = "records" | "account" | "agents" | "inbox" | "diary" | "reminders" | "memory" | "prefs" | "feedback" | "outbox" | "mind" | "auth" | "push";
 
 export const nsKey = (ns: string, c: Collection) => `${ROOT}.${ns}.${c}`;
 

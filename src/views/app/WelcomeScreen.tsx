@@ -12,6 +12,7 @@ import { LANGS } from "../../personal/i18n";
 import { useT } from "../../personal/useT";
 import type { Goal, Lang, LifeStage } from "../../personal/types";
 import { Stepper, Switch, toLocalInput } from "./kit";
+import { AUTH_MODE, getSession } from "../../auth/otp";
 
 /* =====================================================================
    Sign in + first-time setup (about a minute). From the first answer,
@@ -36,7 +37,9 @@ export function WelcomeScreen() {
   const lang = useSpace((s) => s.prefs.lang);
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  // signed in with a code already? her email is verified — prefill it
+  const [session] = useState(() => getSession());
+  const [email, setEmail] = useState(session?.email ?? "");
   const [goals, setGoals] = useState<Goal[]>([]);
   const [stage, setStage] = useState<LifeStage>("cycling");
   const [last, setLast] = useState("");
@@ -62,7 +65,7 @@ export function WelcomeScreen() {
     );
 
   const finish = () => {
-    createAccount({ name: name.trim() || "You", email: email.trim() || undefined, goals: goals.length ? goals : ["general"], stage, typicalCycle: stage === "post" || stage === "pregnant" ? undefined : len, consent });
+    createAccount({ name: name.trim() || "You", email: email.trim() || undefined, authUserId: session && session.email === email.trim().toLowerCase() ? session.userId : undefined, goals: goals.length ? goals : ["general"], stage, typicalCycle: stage === "post" || stage === "pregnant" ? undefined : len, consent });
     if (last && !unsure) addRecord("period_start", { flow: 3 }, { observedAt: new Date(`${last}T08:00`).toISOString() });
     setTimeout(runAgents, 50);
     navigate("/app");
@@ -110,13 +113,34 @@ export function WelcomeScreen() {
           ))}
         </select>
       </label>
-      <p className="faint small">Already have an account on another device? Cloud sign-in is coming — your space lives on this device for now.</p>
+      {AUTH_MODE !== "none" ? (
+        <p className="faint small">
+          {session ? (
+            <>Signed in as {session.email}.</>
+          ) : (
+            <>
+              Have an account?{" "}
+              <Link href="/app/signin" className="linkish">
+                Sign in with email
+              </Link>
+            </>
+          )}
+        </p>
+      ) : (
+        <p className="faint small">Your space lives on this device. Sign-in by email is coming.</p>
+      )}
     </>,
     /* 1 — name */
     <>
       <h1 className="ob-title">What should OVEREO call you?</h1>
       <input className="ainput big" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your first name" autoFocus aria-label="First name" />
-      <input className="ainput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional — for sync later)" aria-label="Email" />
+      {session ? (
+        <p className="faint small">
+          <Icon name="check" size={12} /> Signed in as {session.email}
+        </p>
+      ) : (
+        <input className="ainput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional — for sync later)" aria-label="Email" />
+      )}
     </>,
     /* 2 — goals */
     <>

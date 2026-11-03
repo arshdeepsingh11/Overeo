@@ -74,6 +74,8 @@ export interface LabValue {
   low?: number;
   high?: number;
   lab?: string;
+  /** as printed on the report, before unit conversion */
+  printed?: string;
 }
 export interface MedicationValue {
   name: string;
@@ -123,6 +125,8 @@ export interface Account {
   id: string;
   name: string;
   email?: string;
+  /** the email account this space is linked to (after sign-in with a code) */
+  authUserId?: string;
   createdAt: string;
   goals: Goal[];
   stage: LifeStage;
@@ -164,6 +168,10 @@ export interface Suggestion {
   href?: string;
   status: "pending" | "approved" | "dismissed" | "snoozed";
   dismissReason?: "not-relevant" | "wrong" | "later";
+  /** wording personalised by the live brain (checked: same numbers, nothing added) */
+  worded?: boolean;
+  /** the original on-device wording, kept for transparency */
+  plainBody?: string;
 }
 
 export interface DiaryEntry {

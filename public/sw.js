@@ -3,7 +3,7 @@
    - Build assets (/_next/static, fonts, icons): cache first (they're versioned).
    - Never caches /api/* (Overeo SI) or anything that isn't a GET.
    Her data never passes through here — it lives in the browser's storage. */
-const VERSION = "overeo-v1";
+const VERSION = "overeo-v2";
 const SHELL = ["/", "/app", "/app/track", "/app/agents", "/app/me", "/offline", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
@@ -57,10 +57,30 @@ self.addEventListener("fetch", (e) => {
   }
 });
 
-/* tapping a reminder notification opens OVEREO */
+/* a reminder sent while OVEREO is closed (Web Push; encrypted end to end) */
+self.addEventListener("push", (e) => {
+  let d = {};
+  try {
+    d = e.data ? e.data.json() : {};
+  } catch (_) {
+    d = { body: e.data ? e.data.text() : "" };
+  }
+  e.waitUntil(
+    self.registration.showNotification(d.title || "OVEREO", {
+      body: d.body || "You have a reminder.",
+      tag: d.tag || undefined,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: typeof d.url === "string" && d.url.startsWith("/") ? d.url : "/app" },
+    }),
+  );
+});
+
+/* tapping a reminder notification opens OVEREO (only ever an OVEREO page) */
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || "/app";
+  const raw = (e.notification.data && e.notification.data.url) || "/app";
+  const url = typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/app";
   e.waitUntil(
     self.clients.matchAll({ type: "window" }).then((ws) => {
       const w = ws.find((x) => "focus" in x);

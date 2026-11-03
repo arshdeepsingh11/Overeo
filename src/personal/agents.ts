@@ -1,5 +1,6 @@
 import type { IconName } from "../ui/Icon";
 import type { Learned } from "./patterns";
+import type { Insight } from "./mind/model";
 import type { SpaceState } from "./space";
 import type { AgentId, AgentSettings, Suggestion } from "./types";
 
@@ -68,11 +69,52 @@ const at = (d: Date, h: number) => {
 
 type Draft = Omit<Suggestion, "id" | "createdAt" | "status">;
 
+const whyOf = (i: Insight) => i.evidence.map((e) => (e.detail ? `${e.label}: ${e.detail}` : e.label));
+
+/** What OVEREO Mind noticed, turned into things an agent can offer to do. */
+function fromInsights(insights: Insight[], now: Date, eveningHour: number): Draft[] {
+  const out: Draft[] = [];
+  const day = now.toDateString();
+  for (const i of insights) {
+    switch (i.id) {
+      case "bp-crisis":
+      case "bp-high":
+        out.push({ key: `visit:bp:${day}`, agent: "visit", kind: "log", title: "Re-check your blood pressure", body: `${i.text}`, why: whyOf(i), href: "/app/track?t=blood_pressure" });
+        break;
+      case "sleep-short": {
+        const wind = at(now, Math.max(20, Math.min(22, eveningHour + 1)));
+        wind.setMinutes(30);
+        out.push({ key: `mood:sleep:${day}`, agent: "mood", kind: "reminder", title: "A wind-down reminder tonight?", body: `${i.text} A reminder at ${wind.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} can help you get to bed earlier.`, why: whyOf(i), due: (wind > now ? wind : new Date(now.getTime() + 60 * 60_000)).toISOString() });
+        break;
+      }
+      case "mood-low":
+        out.push({ key: `mood:low:${day}`, agent: "mood", kind: "info", title: i.title, body: i.text, why: whyOf(i), href: "/app/track?t=mood" });
+        break;
+      case "cycle-outside":
+      case "cycle-irregular":
+        out.push({ key: `visit:${i.id}`, agent: "visit", kind: "summary", title: "Add your cycle dates to a visit summary", body: `${i.text} I can put your dates on one page for your clinician.`, why: whyOf(i), href: "/app/visit" });
+        break;
+      case "fertile":
+        out.push({ key: `fertility:window:${i.title}`, agent: "fertility", kind: "info", title: i.title, body: i.text, why: whyOf(i) });
+        break;
+      case "symptom-coming":
+        out.push({ key: `cycle:prep:${i.title}`, agent: "cycle", kind: "plan", title: i.title, body: i.text, why: whyOf(i) });
+        break;
+      case "fever":
+        out.push({ key: `reminders:fever:${day}`, agent: "reminders", kind: "reminder", title: "Re-check your temperature this evening?", body: i.text, why: whyOf(i), due: at(now, eveningHour).toISOString() });
+        break;
+    }
+  }
+  return out;
+}
+
 /** What each agent would like to propose right now. */
-function propose(s: SpaceState, l: Learned, now: Date): Draft[] {
+function propose(s: SpaceState, l: Learned, now: Date, insights: Insight[] = []): Draft[] {
   const out: Draft[] = [];
   const c = l.cycle;
   const eveningHour = l.memory.some((m) => m.id === "habit-logtime" && m.text.includes("morning")) ? 9 : 20;
+
+  out.push(...fromInsights(insights, now, eveningHour));
 
   /* cycle */
   if (c.starts.length < 2)
@@ -113,7 +155,7 @@ function propose(s: SpaceState, l: Learned, now: Date): Draft[] {
   /* visit prep */
   const strongSymptom = l.memory.find((m) => m.id.startsWith("sym-") && m.confidence >= 0.6);
   if (strongSymptom)
-    out.push({ key: `visit:${strongSymptom.id}`, agent: "visit", kind: "summary", title: "Prepare a visit summary", body: `${strongSymptom.text} I can turn this into a one-page summary with three questions for your doctor.`, why: [strongSymptom.evidence, "Repeating patterns are easier to act on with dates"], href: "/signals?tab=route" });
+    out.push({ key: `visit:${strongSymptom.id}`, agent: "visit", kind: "summary", title: "Prepare a visit summary", body: `${strongSymptom.text} I've turned this into a one-page summary with questions for your doctor.`, why: [strongSymptom.evidence, "Repeating patterns are easier to act on with dates"], href: "/app/visit" });
 
   /* meds */
   const meds = s.records.filter((r) => r.type === "medication" && r.status === "active");
@@ -176,8 +218,8 @@ const kindAllowed = (d: Draft, a: AgentSettings) =>
  * Reconcile: keep live suggestions, add new ones she hasn't already acted
  * on, drop ones that no longer apply. Returns the new inbox.
  */
-export function reconcile(s: SpaceState, l: Learned, now = new Date()): Suggestion[] {
-  const drafts = propose(s, l, now).filter((d) => {
+export function reconcile(s: SpaceState, l: Learned, now = new Date(), insights: Insight[] = []): Suggestion[] {
+  const drafts = propose(s, l, now, insights).filter((d) => {
     const a = s.agents[d.agent];
     if (!a?.enabled) return false;
     const def = agentById(d.agent);

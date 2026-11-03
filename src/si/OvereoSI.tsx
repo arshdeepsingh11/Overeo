@@ -14,6 +14,11 @@ import { ask, siMode } from "./provider";
 import { suggestionsFor } from "./engine";
 import { listen, speak, stopSpeaking, voiceSupported, speakSupported, micLevel, type Listener } from "./voice";
 import type { SIAnswer, SIContext, SIMessage, SIViz } from "./types";
+import { useSpace, voteAnswer } from "../personal/space";
+import { runMindAction } from "../personal/mind/act";
+import { model } from "../personal/mind";
+import type { MindAction } from "../personal/mind/answer";
+import { sureLabel } from "../personal/mind/stats";
 
 /* =====================================================================
    Overeo SI — Symbiotic Intelligence.
@@ -30,8 +35,14 @@ export function OvereoSI() {
   const seed = useStore((s) => s.siSeed);
   const listenReq = useStore((s) => s.siListen);
   const section = useStore((s) => s.activeSection);
-  const profileName = useStore((s) => s.profile.name);
-  const isSample = useStore((s) => s.profile.isSample);
+  const demoName = useStore((s) => s.profile.name);
+  const demoSample = useStore((s) => s.profile.isSample);
+  const spaceReady = useSpace((s) => s.ready);
+  const spaceName = useSpace((s) => s.account?.name);
+  const spaceMode = useSpace((s) => s.mode);
+  const portal = spaceReady && typeof location !== "undefined" && /^\/app(\/|$)/.test(location.pathname) && !/^\/app\/(welcome|signin)/.test(location.pathname);
+  const profileName = portal ? (spaceName ?? "You") : demoName;
+  const isSample = portal ? spaceMode === "sample" : demoSample;
   const [msgs, setMsgs] = useState<SIMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -193,8 +204,8 @@ export function OvereoSI() {
 
   if (!open) return null;
 
-  const secLabel = labelFor(origin);
-  const sugg = suggestionsFor(origin);
+  const secLabel = portal ? "Your space" : labelFor(origin);
+  const sugg = portal ? portalSuggestions() : suggestionsFor(origin);
   const empty = msgs.length === 0;
 
   return (
@@ -208,7 +219,7 @@ export function OvereoSI() {
               <div className="si-name">
                 Overeo <span className="serif">SI</span>
               </div>
-              <div className="si-sub">Symbiotic Intelligence · {siMode === "live" ? "Xevyo live" : "on-device"}</div>
+              <div className="si-sub" aria-live="polite">{sourceLabel(lastSource(msgs), portal)}</div>
             </div>
           </div>
           <div className="si-head-actions">
@@ -248,9 +259,11 @@ export function OvereoSI() {
             <Icon name="user" size={13} /> {profileName}
             {isSample ? " (sample)" : ""} {ctx.useProfile ? "×" : "+"}
           </button>
-          <button className={`chip ${ctx.useSignals ? "on-soft" : "off"}`} onClick={() => setCtx((c) => ({ ...c, useSignals: !c.useSignals }))} aria-pressed={ctx.useSignals}>
-            <Icon name="radar" size={13} /> Signals {ctx.useSignals ? "×" : "+"}
-          </button>
+          {!portal && (
+            <button className={`chip ${ctx.useSignals ? "on-soft" : "off"}`} onClick={() => setCtx((c) => ({ ...c, useSignals: !c.useSignals }))} aria-pressed={ctx.useSignals}>
+              <Icon name="radar" size={13} /> Signals {ctx.useSignals ? "×" : "+"}
+            </button>
+          )}
         </div>
 
         <div ref={scroller} className="si-scroll">
@@ -266,7 +279,7 @@ export function OvereoSI() {
             </div>
           ) : (
             <div className="si-thread">
-              {msgs.map((m) => (m.role === "user" ? <div key={m.id} className="si-q">{m.text}</div> : <SIReply key={m.id} msg={m} onAsk={(t) => void send(t)} />))}
+              {msgs.map((m) => (m.role === "user" ? <div key={m.id} className="si-q">{m.text.replace(/^explain more:\s*/i, "Explain more: ")}</div> : <SIReply key={m.id} msg={m} onAsk={(t) => void send(t)} />))}
             </div>
           )}
         </div>
@@ -305,7 +318,7 @@ export function OvereoSI() {
               }
               if (e.key === "Escape") closeSI();
             }}
-            placeholder={orb === "listening" ? "Listening…" : "Ask anything, or say “dark mode”, “enter space”, “AMH 0.9”…"}
+            placeholder={orb === "listening" ? "Listening…" : portal ? "Ask about you, or tell me: “bad cramps today”, “slept 6 h”…" : "Ask anything, or say “dark mode”, “enter space”, “AMH 0.9”…"}
             aria-label="Ask Overeo SI"
             autoComplete="off"
             spellCheck={false}
@@ -358,6 +371,7 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
       return;
     }
     let i = 0;
+    const fast = a.source === "mind";
     const tTrace = setInterval(() => {
       i++;
       setStep(i);
@@ -366,15 +380,15 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
         const total = a.summary.split(/\s+/).length;
         let w = 0;
         const tW = setInterval(() => {
-          w += 2;
+          w += fast ? 4 : 2;
           setWords(w);
           if (w >= total) {
             clearInterval(tW);
             setDone(true);
           }
-        }, 34);
+        }, fast ? 24 : 34);
       }
-    }, 300);
+    }, fast ? 150 : 300);
     return () => clearInterval(tTrace);
   }, [a, msg.remote, reduce]);
 
@@ -443,6 +457,7 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
               ))}
             </div>
           )}
+          <MindExtras a={a} remote={!!msg.remote} onAsk={onAsk} />
           {!msg.remote && siMode === "live" && /answered on this device/i.test(a.limits ?? "") && (
             <p className="si-fallback">
               <Icon name="wifioff" size={13} /> {a.limits?.split(/(?<=\.)\s/).pop()}
@@ -463,7 +478,7 @@ function Grounding({ a, remote }: { a: SIAnswer; remote: boolean }) {
       </summary>
       <dl>
         <dt>Origin</dt>
-        <dd>{remote ? "Live model, with OVEREO context" : "On-device engine, from her data"}</dd>
+        <dd>{remote || a.source === "xevyo" ? "Live brain (Xevyo), given only the facts listed under “Why this?”" : a.source === "mind" ? "OVEREO Mind, on your device, from your own records" : "On-device engine"}</dd>
         <dt>Used</dt>
         <dd>{a.used.join(" · ") || "—"}</dd>
         {a.missing && a.missing.length > 0 && (
@@ -579,4 +594,160 @@ function MiniViz({ kind }: { kind: SIViz }) {
       </div>
     );
   return null;
+}
+
+/* ------------------------------ OVEREO Mind ------------------------------ */
+
+function lastSource(msgs: SIMessage[]) {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.role === "si" && m.answer) return m.remote || m.answer.source === "xevyo" ? "xevyo" : m.answer.source === "mind" ? "mind" : "engine";
+    if (m.role === "si" && m.remote) return "xevyo";
+  }
+  return null;
+}
+
+function sourceLabel(src: string | null, portal: boolean) {
+  if (src === "xevyo") return "Live brain (Xevyo)";
+  if (src === "mind") return "On your device";
+  if (src === "engine") return "On-device";
+  return siMode === "live" ? (portal ? "On your device · live when needed" : "On-device · live when needed") : "On-device";
+}
+
+/** Suggestions from what matters for her right now. */
+function portalSuggestions(): string[] {
+  try {
+    const m = model();
+    const xs = m.insights.flatMap((i) => (i.action?.ask ? [i.action.ask] : []));
+    const base = m.learned.cycle.day ? ["How am I doing?", "When is my next period?", "What if I sleep 1 hour more?"] : ["What can you do?", "When is my next period?", "How am I doing?"];
+    return [...new Set([...xs, ...base])].slice(0, 3);
+  } catch {
+    return ["What can you do?", "How am I doing?", "When is my next period?"];
+  }
+}
+
+function MindExtras({ a, remote, onAsk }: { a: SIAnswer; remote: boolean; onAsk: (t: string) => void }) {
+  const [why, setWhy] = useState(false);
+  const [voted, setVoted] = useState<"up" | "down" | null>(null);
+  const [doneIds, setDoneIds] = useState<Record<string, string>>({});
+  if (!a.source || a.source === "engine") return null;
+  const items = a.why ?? [];
+  const facts = a.sharedFacts ?? [];
+  const act = async (x: MindAction) => {
+    const r = await runMindAction(x, onAsk);
+    if (r) setDoneIds((d) => ({ ...d, [x.label]: r }));
+  };
+  return (
+    <div className="mind-x">
+      {a.outcome && <OutcomeBar o={a.outcome} />}
+      {a.mindActions && a.mindActions.length > 0 && (
+        <div className="si-actions">
+          {a.mindActions.map((x, i) => (
+            <button key={x.label} className={`btn sm ${x.kind === "log" || x.kind === "remember" || i === 0 ? "" : "ghost"}`} disabled={!!doneIds[x.label]} onClick={() => void act(x)}>
+              <Icon name={doneIds[x.label] ? "check" : x.kind === "log" ? "plus" : x.kind === "order" ? "flask" : x.kind === "remember" ? "sparkle" : x.kind === "ask" ? "sparkle" : "arrow"} size={14} /> {doneIds[x.label] ?? x.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="mind-meta">
+        {a.confidence != null && a.intent !== "emergency" && (
+          <span className={`mind-sure c${Math.round(a.confidence * 4)}`} title={`${Math.round(a.confidence * 100)}%`}>
+            <span className="mind-sure-bar" style={{ ["--c" as string]: a.confidence }} /> {sureLabel(a.confidence)}
+          </span>
+        )}
+        {(items.length > 0 || facts.length > 0) && (
+          <button className="mind-whybtn" aria-expanded={why} onClick={() => setWhy((w) => !w)}>
+            <Icon name="eye" size={13} /> Why this?
+          </button>
+        )}
+        {a.intent && a.intent !== "emergency" && (
+          <span className="mind-vote" role="group" aria-label="Was this helpful?">
+            <button
+              aria-label="Helpful"
+              aria-pressed={voted === "up"}
+              disabled={!!voted}
+              onClick={() => {
+                voteAnswer(a.intent!, true);
+                setVoted("up");
+              }}
+            >
+              <Icon name="check" size={13} />
+            </button>
+            <button
+              aria-label="Not helpful"
+              aria-pressed={voted === "down"}
+              disabled={!!voted}
+              onClick={() => {
+                voteAnswer(a.intent!, false);
+                setVoted("down");
+              }}
+            >
+              <Icon name="close" size={13} />
+            </button>
+            {voted && <span className="faint small">{voted === "up" ? "Thanks — noted." : "Noted. I'll go deeper on this next time."}</span>}
+          </span>
+        )}
+      </div>
+      {why && (
+        <div className="mind-why">
+          {items.length > 0 && (
+            <ul>
+              {items.map((e, i) => (
+                <li key={i}>
+                  <b>{e.label}</b>
+                  {e.detail ? <span> · {e.detail}</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          {remote && facts.length > 0 && (
+            <>
+              <div className="si-label">Shared with the live brain (no name, no raw logs)</div>
+              <ul className="mind-facts">
+                {facts.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+      {a.followUps && a.followUps.length > 0 && (
+        <div className="mind-follow">
+          {a.followUps.map((f) => (
+            <button key={f} className="chip" onClick={() => onAsk(f)}>
+              {/^explain more:/i.test(f) ? (
+                <>
+                  <Icon name="sparkle" size={12} /> Explain more
+                </>
+              ) : (
+                f
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OutcomeBar({ o }: { o: NonNullable<SIAnswer["outcome"]> }) {
+  const pos = (v: number) => `${((v - o.min) / (o.max - o.min)) * 100}%`;
+  return (
+    <div className="mind-outcome" role="img" aria-label={`${o.label}: now ${o.now}${o.unit}, would be about ${o.then}${o.unit} (range ${o.low}–${o.high})`}>
+      <div className="mind-outcome-track">
+        <span className="band" style={{ left: pos(o.low), width: `calc(${pos(o.high)} - ${pos(o.low)})` }} />
+        <span className="now" style={{ left: pos(o.now) }} title={`Now ${o.now}`} />
+        <span className="then" style={{ left: pos(o.then) }} title={`Then ${o.then}`} />
+      </div>
+      <div className="mind-outcome-l">
+        <span>
+          {o.label} now <b>{o.now}{o.unit}</b>
+        </span>
+        <span>
+          → about <b>{o.then}{o.unit}</b> <span className="faint">({o.low}–{o.high})</span>
+        </span>
+      </div>
+    </div>
+  );
 }

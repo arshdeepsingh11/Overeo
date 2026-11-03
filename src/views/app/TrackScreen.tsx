@@ -45,7 +45,7 @@ export const LABS: { name: string; unit: string; low?: number; high?: number }[]
   { name: "LDL cholesterol", unit: "mmol/L", high: 3.4 },
 ];
 
-const SYMPTOMS = ["Cramps / pelvic pain", "Headache", "Bloating", "Breast tenderness", "Acne", "Painful bowel movements", "Pain with sex", "Hot flash", "Night sweats", "Fatigue", "Nausea", "Back pain"];
+const SYMPTOMS = ["Cramps / pelvic pain", "Spotting", "Headache", "Bloating", "Breast tenderness", "Acne", "Painful bowel movements", "Pain with sex", "Hot flash", "Night sweats", "Fatigue", "Nausea", "Back pain"];
 const MOODS: { score: 1 | 2 | 3 | 4 | 5; label: string; face: string }[] = [
   { score: 1, label: "Low", face: "😞" },
   { score: 2, label: "Flat", face: "😕" },
@@ -85,7 +85,6 @@ export function TrackScreen({ initial, review }: { initial?: string; review?: bo
         ref={fileRef}
         type="file"
         accept="image/*,application/pdf"
-        capture="environment"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -491,56 +490,125 @@ function LabForm({ when, initial, onSave }: { when: React.ReactNode; initial?: {
 
 /* ----------------------------- Snap a report ----------------------------- */
 
+type Row = { id: number; test: string; value: string; unit: string; low?: number; high?: number; keep: boolean; source: "device" | "live" | "you"; line?: string; printed?: string };
+
 function SnapSheet({ snap, onClose }: { snap: { file: File; url: string }; onClose: () => void }) {
-  const [rows, setRows] = useState<{ test: string; value: string; unit: string }[]>([{ test: "Ferritin", value: "", unit: "ng/mL" }]);
+  const personalise = useSpace((s) => s.account?.consent.personalise !== false);
+  const [step, setStep] = useState("Getting ready");
+  const [phase, setPhase] = useState<"reading" | "review">("reading");
+  const [rows, setRows] = useState<Row[]>([]);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [usedLive, setUsedLive] = useState(false);
   const [date, setDate] = useState(toLocalInput(new Date().toISOString()).slice(0, 10));
+  const [dateFound, setDateFound] = useState(false);
   const [saving, setSaving] = useState(false);
   const isPdf = snap.file.type === "application/pdf";
-  const valid = rows.filter((r) => r.value && !isNaN(Number(r.value.replace(",", "."))));
-  const save = async () => {
+  const nextId = useRef(1);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const { readReport } = await import("../../personal/mind/report");
+      const r = await readReport(snap.file, { useLive: personalise, onStep: (x) => alive && setStep(x) });
+      if (!alive) return;
+      setRows(r.rows.map((x) => ({ id: nextId.current++, test: x.test, value: String(x.value), unit: x.unit, low: x.low, high: x.high, keep: true, source: x.source, line: x.line, printed: x.printed })));
+      if (r.collected) {
+        setDate(r.collected);
+        setDateFound(true);
+      }
+      setProblem(r.problem ?? null);
+      setUsedLive(r.live);
+      setPhase("review");
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [snap.file, personalise]);
+
+  const valid = rows.filter((r) => r.keep && r.value && !isNaN(Number(r.value.replace(",", "."))));
+  const save = async (confirmed: boolean) => {
     setSaving(true);
     const docId = await attachDocument(snap.file);
     for (const r of valid) {
       const def = LABS.find((l) => l.name === r.test);
-      addRecord("lab_result", { testName: r.test, value: Number(r.value.replace(",", ".")), unit: r.unit, low: def?.low, high: def?.high }, { observedAt: new Date(`${date}T09:00`).toISOString(), origin: "uploaded_document", documentId: docId, confirmed: true });
+      const sameUnit = !def || def.unit === r.unit;
+      addRecord(
+        "lab_result",
+        {
+          testName: r.test,
+          value: Number(r.value.replace(",", ".")),
+          unit: r.unit,
+          // the report's own range wins; otherwise OVEREO's default (only when units match)
+          low: r.low ?? (sameUnit ? def?.low : undefined),
+          high: r.high ?? (sameUnit ? def?.high : undefined),
+          printed: r.printed,
+        },
+        { observedAt: new Date(`${date}T09:00`).toISOString(), origin: "uploaded_document", documentId: docId, confirmed },
+      );
     }
-    diary("you", "Added a lab report", `${valid.length} value${valid.length === 1 ? "" : "s"} · ${snap.file.name}`);
-    done(`Saved ${valid.length} value${valid.length === 1 ? "" : "s"} with the report attached`);
+    diary("you", confirmed ? "Added a lab report" : "Saved a lab report to check later", `${valid.length} value${valid.length === 1 ? "" : "s"} · ${snap.file.name}`);
+    done(confirmed ? `Saved ${valid.length} value${valid.length === 1 ? "" : "s"} with the report attached` : "Saved — confirm the values when you're ready");
     onClose();
   };
+  const set = (id: number, p: Partial<Row>) => setRows((x) => x.map((y) => (y.id === id ? { ...y, ...p } : y)));
+
   return (
     <Sheet open onClose={onClose} title="Add values from your report">
       <div className="snap">
         <div className="snap-img">{isPdf ? <span className="snap-pdf"><Icon name="doc" size={28} /> {snap.file.name}</span> : <img src={snap.url} alt="Your report" />}</div>
         <div className="snap-form">
-          <p className="faint small">
-            Type each value as it's printed. The photo stays attached as the source, on this device. <b>Automatic reading is coming</b> — it will read the report for you and still ask you to confirm each value.
-          </p>
-          <label className="when">
-            <span>Collected on</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-          {rows.map((r, i) => (
-            <div key={i} className="lab-row">
-              <select
-                value={r.test}
-                onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, test: e.target.value, unit: LABS.find((l) => l.name === e.target.value)?.unit ?? y.unit } : y)))}
-                aria-label="Test"
-              >
-                {LABS.map((l) => (
-                  <option key={l.name}>{l.name}</option>
-                ))}
-              </select>
-              <input className="ainput" inputMode="decimal" placeholder="Value" value={r.value} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, value: e.target.value } : y)))} aria-label="Value" />
-              <input className="ainput unit" value={r.unit} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, unit: e.target.value } : y)))} aria-label="Unit" />
+          {phase === "reading" ? (
+            <div className="snap-reading" role="status" aria-live="polite">
+              <span className="snap-spin" aria-hidden="true" />
+              <b>{step}…</b>
+              <span className="faint small">Reading happens on your device. {personalise ? "Only the result lines — never your name or details — may be double-checked by the live brain." : ""}</span>
+              <button className="chip" onClick={() => setPhase("review")}>
+                Type them myself instead
+              </button>
             </div>
-          ))}
-          <button className="chip" onClick={() => setRows((x) => [...x, { test: "Vitamin D", value: "", unit: "nmol/L" }])}>
-            <Icon name="plus" size={12} /> Another value
-          </button>
-          <button className="btn" disabled={!valid.length || saving} onClick={save}>
-            <Icon name="check" size={16} /> I checked these — save
-          </button>
+          ) : (
+            <>
+              {problem ? (
+                <p className="alert-note small">{problem}</p>
+              ) : (
+                <p className="faint small">
+                  I found {rows.length} result{rows.length === 1 ? "" : "s"}{usedLive ? " (double-checked by the live brain)" : ""}. <b>Check each one against the report</b> — nothing counts until you do.
+                </p>
+              )}
+              <label className="when">
+                <span>Collected on{dateFound ? "" : " — please check"}</span>
+                <input type="date" value={date} max={toLocalInput(new Date().toISOString()).slice(0, 10)} onChange={(e) => setDate(e.target.value)} />
+              </label>
+              {rows.map((r) => (
+                <div key={r.id} className={`lab-row read ${r.keep ? "" : "off"}`}>
+                  <input type="checkbox" checked={r.keep} onChange={(e) => set(r.id, { keep: e.target.checked })} aria-label={`Keep ${r.test}`} />
+                  <select value={r.test} onChange={(e) => set(r.id, { test: e.target.value, unit: LABS.find((l) => l.name === e.target.value)?.unit ?? r.unit, low: undefined, high: undefined })} aria-label="Test">
+                    {[...new Set([r.test, ...LABS.map((l) => l.name)])].map((l) => (
+                      <option key={l}>{l}</option>
+                    ))}
+                  </select>
+                  <input className="ainput" inputMode="decimal" placeholder="Value" value={r.value} onChange={(e) => set(r.id, { value: e.target.value, source: "you" })} aria-label={`${r.test} value`} />
+                  <input className="ainput unit" value={r.unit} onChange={(e) => set(r.id, { unit: e.target.value, low: undefined, high: undefined })} aria-label="Unit" />
+                  {(r.printed || r.line) && (
+                    <span className="lab-src faint small">
+                      {r.source === "live" ? "Read by the live brain" : r.source === "you" ? "You changed this" : "Read on your device"} · printed “{r.printed ?? r.line}”{(r.low != null || r.high != null) && !/range/.test(r.printed ?? "") ? ` · range ${r.low ?? ""}–${r.high ?? ""} ${r.unit}` : ""}
+                    </span>
+                  )}
+                </div>
+              ))}
+              <button className="chip" onClick={() => setRows((x) => [...x, { id: nextId.current++, test: "Ferritin", value: "", unit: "ng/mL", keep: true, source: "you" }])}>
+                <Icon name="plus" size={12} /> Add a value
+              </button>
+              <div className="snap-save">
+                <button className="btn" disabled={!valid.length || saving} onClick={() => void save(true)}>
+                  <Icon name="check" size={16} /> I checked these — save
+                </button>
+                <button className="btn ghost sm" disabled={!valid.length || saving} onClick={() => void save(false)}>
+                  Save, check later
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </Sheet>
