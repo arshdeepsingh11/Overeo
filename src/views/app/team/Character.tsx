@@ -24,6 +24,7 @@ const BODY: Record<Shape, string> = {
   wave: "M20 90c0-38 18-64 40-64s40 26 40 64c-7 6-13 6-20 0s-13-6-20 0-13 6-20 0-13-6-20 0z",
   shield: "M60 16l36 12v26c0 24-16 40-36 48-20-8-36-24-36-48V28z",
   orb: "M60 22a40 40 0 1 1 0 80 40 40 0 0 1 0-80z",
+  echo: "M60 24c22 0 38 15 38 34s-16 34-38 34c-5 0-10-1-14-2l-14 8 3-13c-8-7-13-16-13-27 0-19 16-34 38-34z",
 };
 
 const EMBLEM: Record<Shape, string> = {
@@ -37,6 +38,7 @@ const EMBLEM: Record<Shape, string> = {
   wave: "M30 18a10 10 0 0 1 16 0M38 10v4",
   shield: "M50 86l7 7 14-14",
   orb: "M18 64a42 14 0 0 0 84 0",
+  echo: "M104 44a22 22 0 0 1 0 28M112 36a34 34 0 0 1 0 44M16 44a22 22 0 0 0 0 28",
 };
 
 function Petals() {
