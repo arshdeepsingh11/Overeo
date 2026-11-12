@@ -8,7 +8,8 @@ import { runTeam, sharedFacts, type TeamEvent } from "../../../agents/client";
 import type { Source } from "../../../agents/engine";
 import { useSpace } from "../../../personal/space";
 import { AppPage, Card } from "../kit";
-import { Character, type CharState } from "./Character";
+import { type CharState } from "./Character";
+import { Avatar } from "./Avatar";
 import { AgentConsole, MODE_LABEL } from "./AgentConsole";
 
 /* =====================================================================
@@ -117,7 +118,7 @@ export function TeamScreen() {
               const s = st[a.id] ?? (stages.length && !active.has(a.id) ? "idle" : "idle");
               return (
                 <button key={a.id} className={`net-node ${active.has(a.id) ? "on" : stages.length ? "dim" : ""} s-${s}`} style={{ ["--i" as string]: i, ["--h" as string]: a.hue }} onClick={() => setChat(a.id)} aria-label={`Chat with ${a.name}, ${a.title}`}>
-                  <Character agent={a} state={s} size={58} label={false} />
+                  <Avatar agent={a} state={s} size={58} label={false} />
                   <b>{a.name}</b>
                   <span>{a.title}</span>
                 </button>
@@ -127,7 +128,7 @@ export function TeamScreen() {
               const a = teamById(id)!;
               return (
                 <div key={id} className={`net-node core ${active.has(id) ? "on" : ""} s-${st[id] ?? "idle"}`} style={{ ["--h" as string]: a.hue }}>
-                  <Character agent={a} state={st[id] ?? "idle"} size={58} label={false} />
+                  <Avatar agent={a} state={st[id] ?? "idle"} size={58} label={false} />
                   <b>{a.name}</b>
                   <span>{a.title}</span>
                 </div>
@@ -145,7 +146,7 @@ export function TeamScreen() {
                 const s = st[id];
                 return (
                   <li key={id} className={`run-step s-${s}`}>
-                    <Character agent={a} state={s ?? "waiting"} size={34} label={false} />
+                    <Avatar agent={a} state={s ?? "waiting"} size={34} label={false} />
                     <div>
                       <b>
                         {a.name} <span className="faint">· {a.title}</span>

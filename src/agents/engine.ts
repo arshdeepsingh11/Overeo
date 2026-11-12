@@ -1,6 +1,6 @@
 import { SPECIALISTS, SHARED_LIMITS, SITE_MAP, TEAM, allowedRoute, teamById, type TeamAgent, type TeamId } from "./team";
 import { guard, type GuardResult } from "./guard";
-import { factPassages, retrieve, tokens } from "./retrieval";
+import { expand, factPassages, retrieve, tokens } from "./retrieval";
 import type { Passage } from "./corpus";
 
 /* =====================================================================
@@ -129,7 +129,40 @@ export function systemPrompt(agent: TeamAgent, context: string, language = "Engl
 
 /* ------------------------------ compose (no model) ------------------------------ */
 
-const firstSentences = (t: string, n: number) => (t.match(/[^.!?]+[.!?]+/g) ?? [t]).slice(0, n).join(" ").trim();
+/**
+ * OVEREO's own answer, with no model: the sentences from the best
+ * passages that match her question most closely, in plain order.
+ */
+export function extract(q: string, passages: Passage[], max = 3): string {
+  const { all, base } = expand(q);
+  const want = new Set(all);
+  const mine = new Set(base);
+  const cand: { s: string; score: number; from: number }[] = [];
+  const wantsChecks = /\b(test|check|diagnos|how .* (know|find out)|exam|scan)/i.test(q);
+  passages.forEach((p, pi) => {
+    if (/^Sources behind/.test(p.text)) return;
+    if (!wantsChecks && /how it's usually checked/.test(p.text)) return;
+    const sents = p.text.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [p.text];
+    sents.forEach((raw, si) => {
+      const s = raw.trim();
+      if (s.length < 25) return;
+      const ts = tokens(s);
+      const hit = ts.filter((t) => want.has(t)).length;
+      // off-topic sentences that share one word with the question are skipped
+      const own = ts.filter((t) => mine.has(t)).length;
+      if (!hit || (pi > 0 && own < Math.min(2, mine.size))) return;
+      // earlier passages and earlier sentences carry the main point
+      cand.push({ s, score: hit / Math.sqrt(ts.length + 4) + (passages.length - pi) * 0.04 - si * 0.02, from: pi });
+    });
+  });
+  const picked: typeof cand = [];
+  for (const c of cand.sort((a, b) => b.score - a.score)) {
+    if (picked.length >= max) break;
+    if (picked.some((x) => x.s === c.s || (x.from === c.from && picked.filter((y) => y.from === c.from).length >= 2))) continue;
+    picked.push(c);
+  }
+  return picked.map((x) => x.s).join(" ");
+}
 
 /** An answer built only from the passages — used when the live brain is off or fails. */
 export function compose(p: Prepared, opts: { mind?: { title: string; text: string; points?: string[] } | null } = {}): string {
@@ -138,9 +171,9 @@ export function compose(p: Prepared, opts: { mind?: { title: string; text: strin
     return [opts.mind.text, ...pts.map((x) => `• ${x}`)].join("\n");
   }
   const own = p.passages.filter((x) => x.source !== "Your data");
-  if (!own.length) return `That isn't in what I know yet. ${p.handoff ? `${p.handoff.name}, your ${p.handoff.title.toLowerCase()}, may know more.` : `I can help with ${p.agent.does.slice(0, 2).join(" or ")}.`}`;
-  const lines = own.slice(0, 2).map((x) => firstSentences(x.text, 2));
-  return lines.join("\n\n");
+  const text = own.length ? extract(p.question, own) : "";
+  if (!text) return `That isn't in what I know yet. ${p.handoff ? `${p.handoff.name}, your ${p.handoff.title.toLowerCase()}, may know more.` : `I can help with ${p.agent.does.slice(0, 2).join(" or ")}.`}`;
+  return text;
 }
 
 export function guarded(p: Prepared): AgentReply {

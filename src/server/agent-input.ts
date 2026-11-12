@@ -18,5 +18,5 @@ export function cleanMessages(x: unknown): { role: "user" | "assistant"; content
 
 export function cleanAgent(x: unknown): TeamId | null {
   const a = typeof x === "string" ? teamById(x) : undefined;
-  return a && !a.networkOnly ? a.id : null;
+  return a && !a.networkOnly && !a.tool ? a.id : null;
 }
