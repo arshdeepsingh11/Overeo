@@ -12,6 +12,7 @@ import { correctMemory, deleteMySpace, exportMySpace, forgetMemory, resetSample,
 import { useT } from "../../personal/useT";
 import type { Goal, Lang, MemoryItem } from "../../personal/types";
 import { AppPage, Card, KeyPad, Sheet, Switch } from "./kit";
+import { EchoSwitch } from "../../translate/Echo";
 import { AUTH_MODE, getSession, signOutEmail } from "../../auth/otp";
 import { pushConfigured, pushSupport, subscribePush, testPush, unsubscribePush } from "../../personal/push";
 
@@ -141,8 +142,11 @@ export function MeScreen() {
                 ))}
               </div>
               <label className="when">
-                <span>Personalise SI with my data</span>
-                <Switch on={own.consent.personalise} onChange={(v) => updateAccount({ consent: { ...own.consent, personalise: v } })} label="Personalise SI" />
+                <span>
+                  Let my agents use my data
+                  <small className="faint small" style={{ display: "block" }}>Only short facts about your patterns go to the live brain (Xevyo) — never your name, email or raw entries. Off = general answers only.</small>
+                </span>
+                <Switch on={own.consent.personalise} onChange={(v) => updateAccount({ consent: { ...own.consent, personalise: v } })} label="Let my agents use my data" />
               </label>
             </Card>
           )}
@@ -160,7 +164,10 @@ export function MeScreen() {
                 ))}
               </select>
             </div>
-            {prefs.lang !== "en" && <p className="faint small">App and SI answers in {LANGS.find((x) => x.id === prefs.lang)?.label}. {t("common.englishOnly").replace("This article", "Educational articles")}</p>}
+            {prefs.lang !== "en" && <p className="faint small">App and SI answers in {LANGS.find((x) => x.id === prefs.lang)?.label}. Turn on ECHO below to translate articles and every other page too.</p>}
+            <div className="set-row set-echo">
+              <EchoSwitch />
+            </div>
             <div className="set-row">
               <span>
                 <Icon name="eyeoff" size={15} /> {t("me.discreet")}
