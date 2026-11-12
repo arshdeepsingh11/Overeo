@@ -33,6 +33,8 @@ export interface TeamAgent {
   /** look */
   hue: number;
   shape: Shape;
+  /** the symbol at the heart of her character (an icon name) */
+  glyph: string;
   /** example questions for her */
   starters: string[];
   /** only appears in team runs */
@@ -91,6 +93,7 @@ export const allowedRoute = (r: string) => SITE_MAP.some((x) => x.route === r);
 export const TEAM: TeamAgent[] = [
   {
     id: "cycle",
+    glyph: "moon",
     name: "LUNA",
     title: "Cycle guide",
     role: "Learns your rhythm: periods, phases, ovulation and what usually comes next.",
@@ -106,6 +109,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "labs",
+    glyph: "flask",
     name: "VERA",
     title: "Lab interpreter",
     role: "Reads your results with you, flags what's out of range and plans sensible retests.",
@@ -121,6 +125,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "visit",
+    glyph: "doc",
     name: "SAGE",
     title: "Care navigator",
     role: "Turns your patterns into a visit summary and helps you find the right kind of care.",
@@ -136,6 +141,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "reminders",
+    glyph: "bell",
     name: "PIP",
     title: "Reminder keeper",
     role: "Keeps your reminders at the times you actually check in.",
@@ -151,6 +157,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "meds",
+    glyph: "pill",
     name: "IRIS",
     title: "Medicine companion",
     role: "Keeps track of what you take and helps you know what to ask your pharmacist.",
@@ -166,6 +173,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "mood",
+    glyph: "smile",
     name: "NOOR",
     title: "Mood & sleep companion",
     role: "Spots the days that are usually harder for you — before they arrive.",
@@ -181,6 +189,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "fertility",
+    glyph: "heart",
     name: "BLOOM",
     title: "Fertility planner",
     role: "Helps you plan for pregnancy or egg freezing with honest timelines.",
@@ -196,6 +205,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "meno",
+    glyph: "waves",
     name: "MAEVE",
     title: "Menopause coach",
     role: "Guides you through perimenopause and beyond — symptoms, bones, heart and sleep.",
@@ -211,6 +221,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "echo",
+    glyph: "globe",
     name: "ECHO",
     title: "Translator",
     role: "Translates any word, sentence or whole page into your language — tap ECHO, or select text and tap Translate.",
@@ -227,6 +238,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "ora",
+    glyph: "shield",
     name: "ORA",
     title: "Verifier",
     role: "Checks every claim and number against OVEREO's sources before anything reaches you.",
@@ -243,6 +255,7 @@ export const TEAM: TeamAgent[] = [
   },
   {
     id: "si",
+    glyph: "sparkle",
     name: "Overeo SI",
     title: "Presenter",
     role: "Brings the team's verified notes together into one clear answer.",

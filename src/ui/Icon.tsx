@@ -76,6 +76,8 @@ const P: Record<string, string> = {
 };
 
 export type IconName = keyof typeof P;
+/** the raw 24×24 path of an icon (used to draw agent glyphs on canvas) */
+export const iconPath = (n: string) => P[n] ?? P.sparkle;
 
 export function Icon({ name, size = 20, stroke = 1.7, ...rest }: { name: IconName; size?: number; stroke?: number } & Omit<SVGProps<SVGSVGElement>, "stroke">) {
   return (

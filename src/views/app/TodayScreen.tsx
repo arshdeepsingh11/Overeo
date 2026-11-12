@@ -12,6 +12,7 @@ import { PHASE_META } from "../../core/engines/forecast";
 import { SuggestionCard } from "./AgentsScreens";
 import { AppPage, Card, fmtDate, fmtTime } from "./kit";
 import { ForYouCard, WhatIfCard } from "./MindCards";
+import { TeamStrip } from "./TeamStrip";
 
 /* =====================================================================
    Today — her home. Who she is today (cycle day, what's coming), what
@@ -48,6 +49,7 @@ export function TodayScreen() {
 
   return (
     <AppPage title={`${t("today.hello") === "Hi" ? hello : t("today.hello")}, ${account?.name ?? ""}`} sub={new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}>
+      <TeamStrip />
       <div className="today-grid">
         {/* her rhythm */}
         <Card className={`today-cycle ${reveal ? "" : "veiled"}`}>

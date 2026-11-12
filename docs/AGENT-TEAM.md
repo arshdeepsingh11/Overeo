@@ -91,3 +91,11 @@ She controls sharing with **Me → "Let my agents use my data"** (off = general 
 
 ### Why OVEREO (`/why`)
 Replaces "Explore your hub" on Home. Plain-language page: what OVEREO is and isn't, 12 checked research facts with sources (`src/content/research-facts.ts`), three steps, the whole team with 3D characters, how to turn agents and ECHO on, privacy, FAQ, emergency note. Linked from the portal menu and the phone menu.
+
+## v4 — instant answers, visible hand-overs, living-light characters
+
+- **Instant answers.** A question gets an answer straight away from her data (OVEREO Mind), the agent's own checked guides, or OVEREO's content. In the meantime the live brain (Xevyo) writes a fuller answer, which replaces the instant one when it's ready ("Updated with more detail ✓"). If Xevyo is slow or down, the instant answer stays, labelled. Before this, open questions waited for Xevyo, which is why answers felt slow on the live site.
+- **Hand-overs you can see.** In Ask SI, the agent who'll answer appears as soon as the question is sent ("MAEVE · Looking at your data…"). When the job moves to another agent, a banner says "MAEVE takes this — menopause coach is MAEVE's job". In agent chat, the new agent takes over with a highlighted note, and every answer is labelled with who gave it.
+- **Living-light characters** (`stage3d.ts`): custom shaders for a liquid core, a glowing nucleus carrying the agent's symbol, orbiting rings, light particles and an aura. Each agent is a different "species", and each state moves differently. The light SVG version (`Character.tsx`) has the same design.
+- **Performance.** One WebGL context for every character. WebGL support is checked once (before this, each character created its own test context, which froze the page for seconds on weaker devices). A one-time speed probe and a governor switch slow devices to the light versions. Characters behind open dialogs, off-screen or in hidden tabs don't render. **Me → Lighter animations** turns 3D off.
+- **Chats are saved** to her account (`POST /v1/profiles/:id/messages`) when she's signed in.

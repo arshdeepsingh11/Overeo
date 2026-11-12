@@ -14,7 +14,7 @@ type Stage = typeof import("./stage3d");
 let stageP: Promise<Stage> | null = null;
 const loadStage = () => (stageP ??= import("./stage3d"));
 
-export function Avatar({ agent, state = "idle", size = 72, label = true }: { agent: Pick<TeamAgent, "name" | "hue" | "shape" | "id">; state?: CharState; size?: number; label?: boolean }) {
+export function Avatar({ agent, state = "idle", size = 72, label = true }: { agent: Pick<TeamAgent, "name" | "hue" | "shape" | "id"> & { glyph?: string }; state?: CharState; size?: number; label?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const view = useRef<import("./stage3d").View | null>(null);
   const [live, setLive] = useState(false);
@@ -28,7 +28,7 @@ export function Avatar({ agent, state = "idle", size = 72, label = true }: { age
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       el.width = Math.round(size * 1.3 * dpr);
       el.height = Math.round(size * 1.3 * dpr);
-      const v = { el, shape: agent.shape, hue: agent.hue, state, visible: true, seed: (agent.id.charCodeAt(0) % 7) * 0.9 };
+      const v: import("./stage3d").View = { el, shape: agent.shape, hue: agent.hue, glyph: agent.glyph ?? "sparkle", state, visible: true, seed: (agent.id.charCodeAt(0) % 7) * 0.9, onFallback: () => alive && setLive(false) };
       view.current = v;
       off = st.register(v);
       if (off) setLive(true);
@@ -39,7 +39,7 @@ export function Avatar({ agent, state = "idle", size = 72, label = true }: { age
       view.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agent.shape, agent.hue, size]);
+  }, [agent.shape, agent.hue, agent.glyph, size]);
 
   useEffect(() => {
     if (!view.current) return;
