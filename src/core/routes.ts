@@ -25,6 +25,7 @@ export interface RouteDef {
 
 export const ROUTES: RouteDef[] = [
   { id: "hero", path: "/", label: "Home", group: "OVEREO", icon: "home", blurb: "Your hub", tabs: [] },
+  { id: "why", path: "/why", label: "Why OVEREO", group: "OVEREO", icon: "heart", blurb: "What it is and how it helps, simply", tabs: [] },
   {
     id: "today",
     path: "/today",

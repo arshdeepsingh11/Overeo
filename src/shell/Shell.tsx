@@ -280,6 +280,7 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
               ["/app/visit", "doc", "Visit summary", "One page for your doctor"],
               ["/app/team", "users", "Ask the team", "Your agents work on it together"],
               ["/app/me", "user", "Me", "What OVEREO knows · settings"],
+              ["/why", "heart", "Why OVEREO", "What it is and how to use it"],
             ] as const
           ).map(([h, ic, l, sub]) => (
             <Link key={h} href={h} className="sheet-link" onClick={onClose}>

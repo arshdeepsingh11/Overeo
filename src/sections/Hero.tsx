@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useRef } from "react";
 import { BeamFlow } from "../fx/BeamFlow";
 import { Marquee3D, type MarqueeIcon } from "../fx/Marquee3D";
@@ -73,12 +75,9 @@ export function Hero() {
                 </button>
               </ShineBorder>
             </Magnetic>
-            <button
-              className="btn ghost"
-              onClick={() => document.getElementById("hub")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            >
-              Explore your hub <Icon name="down" size={18} />
-            </button>
+            <Link className="btn ghost" href="/why">
+              <Icon name="heart" size={18} /> Why OVEREO?
+            </Link>
           </div>
         </div>
 
