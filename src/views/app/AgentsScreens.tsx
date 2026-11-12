@@ -5,8 +5,9 @@ import { useState } from "react";
 import { Icon } from "../../ui/Icon";
 import { AGENTS, agentById, type AgentDef } from "../../personal/agents";
 import { teamById } from "../../agents/team";
-import { Character } from "./team/Character";
+import { Avatar } from "./team/Avatar";
 import { AgentConsole } from "./team/AgentConsole";
+import { EchoSwitch } from "../../translate/Echo";
 import { approve, dismiss } from "../../personal/actions";
 import { removeReminder, setAgent, space, useSpace, diary as logDiary } from "../../personal/space";
 import { useT } from "../../personal/useT";
@@ -176,6 +177,14 @@ export function AgentsScreen() {
           <AgentCard key={a.id} a={a} st={agents[a.id]} pending={inbox.filter((x) => x.agent === a.id && x.status === "pending").length} onOpen={() => setOpen(a.id)} onChat={() => setChat(a.id)} />
         ))}
       </div>
+      <div className="echo-card-inline mt" style={{ ["--h" as string]: teamById("echo")!.hue }}>
+        <Avatar agent={teamById("echo")!} size={56} label={false} />
+        <div>
+          <b>ECHO · Translator</b>
+          <p className="faint small">{teamById("echo")!.role}</p>
+          <EchoSwitch compact />
+        </div>
+      </div>
       {others.length > 0 && (
         <p className="faint small mt">
           Also available when relevant: {others.map((a) => a.name).join(", ")} — they appear when your goals or life stage include them.
@@ -193,7 +202,7 @@ function AgentCard({ a, st, pending, onOpen, onChat }: { a: AgentDef; st: AgentS
   return (
     <div className={`agent ${st.enabled ? "" : "off"}`} style={{ ["--h" as string]: tm.hue }}>
       <div className="agent-top">
-        <Character agent={tm} state={st.enabled ? "idle" : "waiting"} size={52} />
+        <Avatar agent={tm} state={st.enabled ? "idle" : "waiting"} size={52} />
         <span className="agent-name">
           <b>{tm.name}</b>
           <span className="faint small">{tm.title}</span>

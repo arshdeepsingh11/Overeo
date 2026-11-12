@@ -10,11 +10,14 @@ import { narrateSection } from "../core/insights";
 import { Backdrop, NavDock, CollabCursors, Toasts, useGlobalKeys, usePointerSheen } from "./Shell";
 import { Footer } from "../sections/Join";
 import { SpaceRuntime } from "./SpaceRuntime";
+import { useEcho } from "../translate/store";
 
 // Heavy, on-demand layers load only when first opened.
 const OvereoSI = dynamic(() => import("../si/OvereoSI").then((m) => m.OvereoSI), { ssr: false });
 const SpaceMode = dynamic(() => import("../space/SpaceMode").then((m) => m.SpaceMode), { ssr: false });
 const ARMode = dynamic(() => import("../space/ARMode").then((m) => m.ARMode), { ssr: false });
+// ECHO (translator) loads only once she turns it on
+const EchoRoot = dynamic(() => import("../translate/Echo").then((m) => m.EchoRoot), { ssr: false });
 
 /* =====================================================================
    The persistent app shell. It lives in the root layout, so the dock,
@@ -30,6 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const mode = useStore((s) => s.mode);
   const siOpen = useStore((s) => s.siOpen);
+  const echoOn = useEcho((s) => s.on);
 
   useEffect(() => {
     hydrateStore();
@@ -90,6 +94,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {mode === "space" && <SpaceMode />}
       {mode === "ar" && <ARMode />}
       {siOpen && <OvereoSI />}
+      {echoOn && <EchoRoot />}
       <SpaceRuntime />
     </>
   );

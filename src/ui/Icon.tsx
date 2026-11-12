@@ -26,6 +26,7 @@ const P: Record<string, string> = {
   play: "M8 5.5v13l11-6.5-11-6.5z",
   printer: "M7 8V3h10v5M7 17H4.5V9.5A1.5 1.5 0 016 8h12a1.5 1.5 0 011.5 1.5V17H17M7 14h10v7H7z",
   check: "M5 12.5l4.5 4.5L19 7.5",
+  copy: "M9 8.5h10.5V20H9zM5 15.5V4h10.5",
   arrow: "M5 12h14M13 6l6 6-6 6",
   chevron: "M9 6l6 6-6 6",
   down: "M6 9l6 6 6-6",
