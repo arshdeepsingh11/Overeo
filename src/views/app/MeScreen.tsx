@@ -13,7 +13,7 @@ import { useT } from "../../personal/useT";
 import type { Goal, Lang, MemoryItem } from "../../personal/types";
 import { AppPage, Card, KeyPad, Sheet, Switch } from "./kit";
 import { EchoSwitch } from "../../translate/Echo";
-import { AUTH_MODE, getSession, signOutEmail } from "../../auth/otp";
+import { AccountCard, LiteRow } from "./AccountCard";
 import { pushConfigured, pushSupport, subscribePush, testPush, unsubscribePush } from "../../personal/push";
 
 const AREA: Record<MemoryItem["area"], string> = { cycle: "Cycle", mood: "Mood", sleep: "Sleep", body: "Body", labs: "Labs", habits: "Habits", preferences: "Preferences", goals: "Goals" };
@@ -31,7 +31,6 @@ export function MeScreen() {
   const [tell, setTell] = useState("");
   const [pinOpen, setPinOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [session, setSession] = useState(() => getSession());
   const [pushNote, setPushNote] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -99,38 +98,7 @@ export function MeScreen() {
         </Card>
 
         <div className="me-side">
-          {mode === "real" && own && AUTH_MODE !== "none" && (
-            <Card title="Account" icon="mail">
-              {session ? (
-                <div className="set-row">
-                  <span>
-                    Signed in as <b>{session.email}</b>
-                    <span className="faint small set-sub">Your health data stays on this device until sync is switched on.</span>
-                  </span>
-                  <button
-                    className="btn ghost sm"
-                    onClick={async () => {
-                      await signOutEmail();
-                      setSession(null);
-                      toast("Signed out of email — your space stays on this device");
-                    }}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              ) : (
-                <div className="set-row">
-                  <span>
-                    Protect your space with your email
-                    <span className="faint small set-sub">A 6-digit code, no password.</span>
-                  </span>
-                  <Link className="btn sm" href="/app/signin">
-                    Sign in
-                  </Link>
-                </div>
-              )}
-            </Card>
-          )}
+          <AccountCard />
           {mode === "real" && own && (
             <Card title="About you" icon="user">
               <span className="form-k">Focus</span>
@@ -175,6 +143,7 @@ export function MeScreen() {
               </span>
               <Switch on={prefs.discreet} onChange={(v) => setPrefs({ discreet: v })} label={t("me.discreet")} />
             </div>
+            <LiteRow />
             <div className="set-row">
               <span>
                 <Icon name="lock" size={15} /> {t("me.lock")}

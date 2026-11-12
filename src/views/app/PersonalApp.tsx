@@ -8,16 +8,18 @@ import { RecapScreen } from "./RecapScreen";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { PortalShell } from "./PortalShell";
 import { VisitScreen } from "./VisitScreen";
-import { SigninScreen } from "./SigninScreen";
+import { AuthScreen } from "./AuthScreen";
+import { ProfilesScreen } from "./ProfilesScreen";
 import { TeamScreen } from "./team/TeamScreen";
 
 /* Her personal space: one client view per screen, all reading the same space store. */
-export type Screen = "today" | "track" | "agents" | "inbox" | "diary" | "me" | "recap" | "welcome" | "visit" | "signin" | "team";
+export type Screen = "today" | "track" | "agents" | "inbox" | "diary" | "me" | "recap" | "welcome" | "visit" | "signin" | "team" | "profiles";
 
 export function PersonalApp({ screen, t, review }: { screen: Screen; t?: string; review?: boolean }) {
   // sign-in / setup is a focused flow of its own; everything else lives in her portal
   if (screen === "welcome") return <WelcomeScreen />;
-  if (screen === "signin") return <SigninScreen />;
+  if (screen === "signin") return <AuthScreen />;
+  if (screen === "profiles") return <ProfilesScreen />;
   return <PortalShell>{<Body screen={screen} t={t} review={review} />}</PortalShell>;
 }
 
