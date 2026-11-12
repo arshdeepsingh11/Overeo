@@ -1,0 +1,49 @@
+# OVEREO on your own server: database + backend + website.
+#   1. cp backend/.env.example backend/.env   (fill in APP_SECRET, ALLOWED_ORIGINS, APP_URL)
+#   2. set POSTGRES_PASSWORD below (or in a .env file next to this one)
+#   3. docker compose up -d --build
+# Put nginx / Caddy in front for HTTPS (see docs/SELF-HOSTING.md).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: overeo
+      POSTGRES_USER: overeo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U overeo -d overeo"]
+      interval: 10s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgres://overeo:${POSTGRES_PASSWORD}@db:5432/overeo
+      STORAGE_DIR: /var/lib/overeo/files
+    volumes:
+      - files:/var/lib/overeo/files
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:4000:4000"
+
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:4000
+      XEVYO_API_KEY: ${XEVYO_API_KEY:-}
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  pgdata:
+  files:

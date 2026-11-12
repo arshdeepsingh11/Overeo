@@ -1,0 +1,26 @@
+{
+  "name": "overeo-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OVEREO backend: accounts, family profiles, health records, sync, files and chat history on PostgreSQL.",
+  "type": "module",
+  "engines": { "node": ">=20.10" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "migrate": "node dist/src/migrate.js",
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx test/driver.test.ts && tsx test/api.test.ts"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.0"
+  }
+}
