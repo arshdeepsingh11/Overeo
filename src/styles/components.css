@@ -2575,3 +2575,135 @@ span.spop-src {
 .mq-pop:not([data-side]) {
   pointer-events: none !important;
 }
+
+/* which teammate is answering in Ask SI */
+.si-agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+  background: hsl(var(--h) 80% 60% / 0.12);
+  border: 1px solid hsl(var(--h) 70% 60% / 0.3);
+  animation: si-agent-in 0.35s ease both;
+}
+.si-agent > span { display: grid; line-height: 1.2; font-size: 0.86rem; min-width: 0; }
+.si-agent small { opacity: 0.7; font-size: 0.74rem; }
+@keyframes si-agent-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .si-agent { animation: none; } }
+
+/* ============================ ECHO translator ============================ */
+.echo-root {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 70;
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+.echo-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 4px 5px;
+  border-radius: 999px;
+  border: 1px solid hsl(140 50% 50% / 0.35);
+  background: var(--glass-solid);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 8px 26px -10px rgba(40, 20, 40, 0.35);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+  min-height: 42px;
+}
+.echo-fab.is-on { background: hsl(140 70% 92% / 0.92); }
+[data-theme="dark"] .echo-fab.is-on { background: hsl(140 40% 22% / 0.9); }
+.echo-fab:focus-visible { outline: 2px solid hsl(140 60% 40%); outline-offset: 2px; }
+.echo-panel {
+  width: min(340px, calc(100vw - 28px));
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  background: var(--glass-solid);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow: 0 20px 50px -20px rgba(40, 20, 40, 0.45);
+  animation: echo-in 0.25s ease both;
+}
+.echo-head { display: flex; align-items: center; gap: 10px; }
+.echo-head > div { display: grid; flex: 1; line-height: 1.2; }
+.echo-row { display: grid; gap: 6px; font-size: 0.86rem; }
+.echo-row select, .echo-switch select { width: 100%; }
+.echo-main { justify-content: center; width: 100%; }
+.echo-status { margin: 0; }
+.echo-panel p { margin: 0; }
+.echo-bubble {
+  position: fixed;
+  z-index: 80;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 0;
+  background: hsl(140 45% 32%);
+  color: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  min-height: 36px;
+  animation: echo-in 0.18s ease both;
+}
+.echo-card {
+  position: fixed;
+  z-index: 81;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 24px));
+  max-height: 60vh;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--glass-solid);
+  border: 1px solid hsl(140 45% 45% / 0.35);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow: 0 24px 60px -24px rgba(30, 20, 30, 0.5);
+  animation: echo-up 0.25s ease both;
+}
+.echo-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.echo-src, .echo-out { margin: 0; overflow-wrap: anywhere; }
+.echo-out { font-size: 1.05rem; line-height: 1.5; }
+.echo-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.echo-card-foot > span { flex: 1 1 160px; }
+.echo-switch { display: grid; gap: 8px; }
+@keyframes echo-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes echo-up { from { opacity: 0; transform: translate(-50%, 10px); } }
+.echo-bubble { animation-name: echo-pop; }
+@keyframes echo-pop { from { opacity: 0; transform: translate(-50%, 4px); } }
+@media (max-width: 640px) {
+  /* sit above the bottom dock / tab bar */
+  .echo-root { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 74px); }
+  .echo-fab span { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-panel, .echo-bubble, .echo-card { animation: none; }
+}
+@media print { .echo-root, .echo-bubble, .echo-card { display: none !important; } }

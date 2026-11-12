@@ -3007,3 +3007,108 @@ mark.hl::before {
     flex-wrap: wrap;
   }
 }
+
+/* ============================== Why OVEREO ============================== */
+.why-sec { padding-block: clamp(28px, 5vw, 56px); display: grid; gap: 20px; }
+.why-sec h3 { margin: 0; font-size: 1.02rem; }
+.why-sec p { margin: 0; }
+.why-ctas { margin-top: 18px; flex-wrap: wrap; }
+.why-echo {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 20px;
+  max-width: 560px;
+}
+.why-echo > div:not(.echo-switch) { display: grid; flex: 1 1 200px; line-height: 1.3; }
+.why-echo .echo-switch { flex: 1 1 220px; }
+.why-echo .echo-switch .when { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.why-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.why-two > * { min-width: 0; }
+.why-list { padding: 18px 20px; border-radius: 22px; display: grid; gap: 12px; }
+.why-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.why-list li { display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
+.why-list li svg { flex: none; margin-top: 3px; color: var(--accent, #c2577a); }
+.why-list.why-yes li svg { color: var(--good, #2f8f6a); }
+.why-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 14px; }
+.why-fact { padding: 18px; border-radius: 22px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.why-stat { font-size: clamp(1.6rem, 4vw, 2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.why-help { padding: 8px 10px; border-radius: 12px; background: var(--glass-thin); }
+.why-help svg { vertical-align: -1px; }
+.why-fact .src-chip { justify-self: start; }
+.why-more { justify-self: center; }
+.why-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px; }
+.why-steps li { position: relative; padding: 22px 18px 18px; border-radius: 22px; display: grid; gap: 8px; align-content: start; }
+.why-num {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+  background: var(--glass-thin);
+  border: 1px solid var(--line);
+}
+.why-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+.why-agent {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 22px;
+  min-width: 0;
+  background-image: radial-gradient(120% 90% at 0% 0%, hsl(var(--h) 80% 70% / 0.16), transparent 60%);
+}
+.why-agent > div { display: grid; gap: 6px; min-width: 0; }
+.why-ask { font-style: italic; opacity: 0.85; }
+.why-howto { margin: 0; padding: 20px 20px 20px 40px; border-radius: 22px; display: grid; gap: 14px; line-height: 1.55; }
+.why-echo-box { padding: 18px; border-radius: 22px; display: grid; gap: 12px; align-content: start; }
+.why-echo-box ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.why-echo-head { display: flex; gap: 12px; align-items: center; }
+.why-echo-head > div { display: grid; gap: 4px; min-width: 0; }
+.why-echo-box .echo-switch .when { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.why-privacy { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+.why-privacy > div { padding: 16px; border-radius: 20px; display: grid; gap: 8px; align-content: start; }
+.why-faq { display: grid; gap: 10px; }
+.why-faq details { padding: 14px 18px; border-radius: 18px; }
+.why-faq summary { cursor: pointer; font-weight: 600; list-style-position: outside; }
+.why-faq details[open] summary { margin-bottom: 8px; }
+.why-end { text-align: center; justify-items: center; padding-bottom: 120px; }
+/* small phones: grid children may not force the page wider than the screen */
+.meet-grid > * { min-width: 0; }
+@media (max-width: 860px) { .meet-grid { grid-template-columns: minmax(0, 1fr); } }
+.meet-right > *, .meet-left > *, .caps > * { min-width: 0; }
+.why-ctas a.btn { text-decoration: none; }
+.why-orbit {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 6px;
+  justify-items: center;
+}
+.why-orbit-i {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  animation: why-float 6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.7s);
+}
+.why-orbit-i:nth-child(even) { transform: translateY(18px); animation-name: why-float-2; }
+@keyframes why-float { 50% { transform: translateY(-8px); } }
+@keyframes why-float-2 { 0%, 100% { transform: translateY(18px); } 50% { transform: translateY(10px); } }
+@media (max-width: 860px) {
+  .why-orbit { max-width: 420px; }
+}
+@media (prefers-reduced-motion: reduce) { .why-orbit-i { animation: none; } }
+/* phones: the ECHO button is a small round button so it covers less */
+@media (max-width: 640px) {
+  .echo-fab:not(.is-on) { padding: 4px; }
+  .echo-fab:not(.is-on) span { display: none; }
+}

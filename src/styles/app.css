@@ -3537,3 +3537,77 @@ a.src-chip:hover {
   padding-top: 6px;
   padding-bottom: 6px;
 }
+
+/* 3D avatars — the flat character shows until the 3D one is ready */
+.av {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+.av > .ch {
+  grid-area: 1 / 1;
+}
+.av-3d {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+/* the drawn 3D character replaces the SVG one only once it has a frame */
+.av.is-3d:has(> .av-3d[data-drawn]) > .ch {
+  opacity: 0;
+}
+.av.is-3d > .av-3d[data-drawn] {
+  opacity: 1;
+}
+.av-waiting .av-3d {
+  filter: saturate(0.3);
+  opacity: 0.7;
+}
+
+/* live hand-over between teammates in a chat */
+.ca-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 0.86rem;
+  background: hsl(var(--h) 80% 62% / 0.12);
+  border: 1px dashed hsl(var(--h) 70% 58% / 0.45);
+  animation: ca-switch-in 0.4s ease both;
+}
+.ca-switch > span { min-width: 0; }
+.ca-wrap { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.ca-who { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; color: hsl(var(--h) 60% 42%); }
+[data-theme="dark"] .ca-who { color: hsl(var(--h) 80% 74%); }
+@keyframes ca-switch-in { from { opacity: 0; transform: scale(0.97); } }
+@media (prefers-reduced-motion: reduce) { .ca-switch { animation: none; } }
+
+/* ECHO on the Agents page and in Me */
+.echo-card-inline {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 20px;
+  background: hsl(var(--h) 60% 60% / 0.1);
+  border: 1px solid hsl(var(--h) 50% 50% / 0.25);
+}
+.echo-card-inline > div { display: grid; gap: 6px; min-width: 0; flex: 1; }
+.echo-card-inline p { margin: 0; }
+.set-echo { display: block; }
+.set-echo .echo-switch .when, .echo-card-inline .echo-switch .when { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* small phones: header buttons wrap instead of pushing the page sideways */
+.app-head > :first-child { min-width: 0; }
+@media (max-width: 480px) {
+  .app-head { flex-wrap: wrap; align-items: flex-start; }
+  .app-actions { flex: 1 1 100%; flex-wrap: wrap; }
+}
+.echo-switch, .echo-switch select { min-width: 0; max-width: 100%; }
