@@ -71,6 +71,7 @@ const P: Record<string, string> = {
   alert: "M12 4l9 15.5H3L12 4zM12 10v4.5M12 17.2h.01",
   mail: "M3.5 6h17v12h-17zM3.5 6l8.5 7 8.5-7",
   cart: "M3 4.5h2.5l2 10.5h10l2-7.5H7M9.5 19.5h.01M16.5 19.5h.01",
+  chat: "M4.5 5.5h15v10h-9l-4.5 3.5v-3.5h-1.5zM8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01",
 };
 
 export type IconName = keyof typeof P;

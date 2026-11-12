@@ -278,6 +278,7 @@ function SectionsSheet({ onClose }: { onClose: () => void }) {
               ["/app/diary", "book", "Diary", "Everything your agents did"],
               ["/app/recap", "play", "Weekly recap", "Your week in two minutes"],
               ["/app/visit", "doc", "Visit summary", "One page for your doctor"],
+              ["/app/team", "users", "Ask the team", "Your agents work on it together"],
               ["/app/me", "user", "Me", "What OVEREO knows · settings"],
             ] as const
           ).map(([h, ic, l, sub]) => (

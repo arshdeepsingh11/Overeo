@@ -28,23 +28,23 @@ export interface AgentDef {
 }
 
 export const AGENTS: AgentDef[] = [
-  { id: "cycle", name: "Cycle agent", icon: "cycle", hue: 340, job: "Learns your rhythm, predicts your period and gives you a heads-up." },
-  { id: "labs", name: "Lab report agent", icon: "flask", hue: 25, job: "Reads your results with you, flags what's out of range and plans retests." },
-  { id: "visit", name: "Visit prep agent", icon: "doc", hue: 300, job: "Turns repeating patterns into a one-page summary and questions for your doctor." },
-  { id: "reminders", name: "Reminder agent", icon: "bell", hue: 315, job: "Keeps your reminders, at the times you actually check in." },
-  { id: "meds", name: "Medicine agent", icon: "pill", hue: 290, job: "Tracks what you take and checks it against your genes and labs." },
-  { id: "mood", name: "Mood & sleep agent", icon: "smile", hue: 320, job: "Spots the days that are usually harder for you, before they arrive." },
+  { id: "cycle", name: "LUNA · Cycle guide", icon: "cycle", hue: 340, job: "Learns your rhythm, predicts your period and gives you a heads-up." },
+  { id: "labs", name: "VERA · Lab interpreter", icon: "flask", hue: 25, job: "Reads your results with you, flags what's out of range and plans retests." },
+  { id: "visit", name: "SAGE · Care navigator", icon: "doc", hue: 300, job: "Turns repeating patterns into a one-page summary and questions for your doctor." },
+  { id: "reminders", name: "PIP · Reminder keeper", icon: "bell", hue: 315, job: "Keeps your reminders, at the times you actually check in." },
+  { id: "meds", name: "IRIS · Medicine companion", icon: "pill", hue: 290, job: "Tracks what you take and helps you prepare questions for your pharmacist." },
+  { id: "mood", name: "NOOR · Mood & sleep companion", icon: "smile", hue: 320, job: "Spots the days that are usually harder for you, before they arrive." },
   {
     id: "fertility",
-    name: "Fertility & egg-freezing planner",
+    name: "BLOOM · Fertility planner",
     icon: "clock",
-    hue: 330,
+    hue: 350,
     job: "Walks you through tests, timing and the questions to ask a clinic.",
     relevant: (s) => !!s.account?.goals.some((g) => g === "fertility" || g === "egg-freezing" || g === "pregnancy"),
   },
   {
     id: "meno",
-    name: "Menopause coach",
+    name: "MAEVE · Menopause coach",
     icon: "waves",
     hue: 20,
     job: "Tracks hot flashes, sleep and cycle changes, and prepares what to discuss.",

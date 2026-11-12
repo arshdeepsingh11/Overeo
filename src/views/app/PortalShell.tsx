@@ -25,6 +25,7 @@ const NAV: { href: string; icon: IconName; key: TKey | null; label?: string; bad
   { href: "/app/track", icon: "plus", key: "nav.track" },
   { href: "/app/inbox", icon: "inbox", key: "inbox.title", badge: "inbox" },
   { href: "/app/agents", icon: "bot", key: "nav.agents" },
+  { href: "/app/team", icon: "users", key: null, label: "Ask the team" },
   { href: "/app/diary", icon: "book", key: "diary.title" },
   { href: "/app/recap", icon: "play", key: "today.recap" },
   { href: "/app/visit", icon: "doc", key: null, label: "Visit summary" },

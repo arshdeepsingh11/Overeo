@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "../../ui/Icon";
 import { AGENTS, agentById, type AgentDef } from "../../personal/agents";
+import { teamById } from "../../agents/team";
+import { Character } from "./team/Character";
+import { AgentConsole } from "./team/AgentConsole";
 import { approve, dismiss } from "../../personal/actions";
 import { removeReminder, setAgent, space, useSpace, diary as logDiary } from "../../personal/space";
 import { useT } from "../../personal/useT";
@@ -137,6 +140,7 @@ export function AgentsScreen() {
   const inbox = useSpace((s) => s.inbox);
   useSpace((s) => s.account); // re-render when goals change
   const [open, setOpen] = useState<AgentId | null>(null);
+  const [chat, setChat] = useState<AgentId | null>(null);
   const relevant = AGENTS.filter((a) => !a.relevant || a.relevant(space.get()));
   const others = AGENTS.filter((a) => a.relevant && !a.relevant(space.get()));
   return (
@@ -145,9 +149,14 @@ export function AgentsScreen() {
       sub={t("agents.sub")}
       icon="bot"
       actions={
-        <Link className="btn ghost sm" href="/app/diary">
-          <Icon name="book" size={15} /> {t("diary.title")}
-        </Link>
+        <>
+          <Link className="btn sm" href="/app/team">
+            <Icon name="users" size={15} /> Ask the team
+          </Link>
+          <Link className="btn ghost sm" href="/app/diary">
+            <Icon name="book" size={15} /> {t("diary.title")}
+          </Link>
+        </>
       }
     >
       <div className="trust-strip">
@@ -164,7 +173,7 @@ export function AgentsScreen() {
       </div>
       <div className="agent-grid">
         {relevant.map((a) => (
-          <AgentCard key={a.id} a={a} st={agents[a.id]} pending={inbox.filter((x) => x.agent === a.id && x.status === "pending").length} onOpen={() => setOpen(a.id)} />
+          <AgentCard key={a.id} a={a} st={agents[a.id]} pending={inbox.filter((x) => x.agent === a.id && x.status === "pending").length} onOpen={() => setOpen(a.id)} onChat={() => setChat(a.id)} />
         ))}
       </div>
       {others.length > 0 && (
@@ -173,20 +182,21 @@ export function AgentsScreen() {
         </p>
       )}
       {open && <AgentSettingsSheet a={agentById(open)} st={agents[open]} onClose={() => setOpen(null)} />}
+      {chat && <AgentConsole initial={chat} onClose={() => setChat(null)} />}
     </AppPage>
   );
 }
 
-function AgentCard({ a, st, pending, onOpen }: { a: AgentDef; st: AgentSettings; pending: number; onOpen: () => void }) {
+function AgentCard({ a, st, pending, onOpen, onChat }: { a: AgentDef; st: AgentSettings; pending: number; onOpen: () => void; onChat: () => void }) {
   const t = useT();
+  const tm = teamById(a.id)!;
   return (
-    <div className={`agent ${st.enabled ? "" : "off"}`} style={{ ["--h" as string]: a.hue }}>
+    <div className={`agent ${st.enabled ? "" : "off"}`} style={{ ["--h" as string]: tm.hue }}>
       <div className="agent-top">
-        <span className="agent-ic">
-          <Icon name={a.icon} size={18} />
-        </span>
+        <Character agent={tm} state={st.enabled ? "idle" : "waiting"} size={52} />
         <span className="agent-name">
-          <b>{a.name}</b>
+          <b>{tm.name}</b>
+          <span className="faint small">{tm.title}</span>
           <span className={`agent-state ${st.enabled ? "on" : ""}`}>{st.enabled ? t("agents.on") : t("agents.off")}</span>
         </span>
         <Switch on={st.enabled} onChange={(v) => setAgent(a.id, { enabled: v })} label={`${a.name} on or off`} />
@@ -197,9 +207,14 @@ function AgentCard({ a, st, pending, onOpen }: { a: AgentDef; st: AgentSettings;
         {st.never.length > 0 && <span>{st.never.length} never-rule{st.never.length === 1 ? "" : "s"}</span>}
         {pending > 0 && <span className="agent-pending">{pending} waiting</span>}
       </div>
-      <button className="agent-set" onClick={onOpen}>
-        <Icon name="settings" size={14} /> Teach this agent
-      </button>
+      <div className="agent-btns">
+        <button className="btn sm" onClick={onChat}>
+          <Icon name="chat" size={14} /> Chat with {tm.name}
+        </button>
+        <button className="agent-set" onClick={onOpen}>
+          <Icon name="settings" size={14} /> Teach {tm.name}
+        </button>
+      </div>
     </div>
   );
 }
