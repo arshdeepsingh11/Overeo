@@ -134,7 +134,17 @@ export interface Account {
   typicalCycle?: number;
   birthYear?: number;
   consent: { personalise: boolean; genetics: boolean; notifications: boolean; research: boolean };
+  /** who this profile is to the person who signed in (family profiles) */
+  relation?: Relation;
+  /** her colour (profile orb) */
+  hue?: number;
+  /** stored in the OVEREO backend: which login and profile */
+  cloud?: { userId: string; profileId: string; hasPin: boolean };
+  /** a profile kept only on this device can have its own PIN (hashed) */
+  pin?: { hash: string; salt: string } | null;
 }
+
+export type Relation = "self" | "mother" | "daughter" | "sister" | "partner" | "grandmother" | "friend" | "other";
 
 /* ---------------------------- agents ---------------------------- */
 export type AgentId = "cycle" | "labs" | "visit" | "reminders" | "meds" | "mood" | "fertility" | "meno";

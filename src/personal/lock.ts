@@ -50,3 +50,20 @@ export function watchAutoLock() {
   document.addEventListener("visibilitychange", vis);
   return () => document.removeEventListener("visibilitychange", vis);
 }
+
+/* ---------------- a PIN for one family profile (kept on this device) ---------------- */
+
+async function pbkdf2(pin: string, salt: string) {
+  if (typeof crypto === "undefined" || !crypto.subtle) return `plain:${salt}:${pin}`; // insecure contexts only
+  const key = await crypto.subtle.importKey("raw", enc(pin), "PBKDF2", false, ["deriveBits"]);
+  return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc(salt), iterations: 210_000 }, key, 256));
+}
+
+export async function hashProfilePin(pin: string) {
+  const salt = hex(crypto.getRandomValues(new Uint8Array(16)).buffer as ArrayBuffer);
+  return { hash: await pbkdf2(pin, salt), salt };
+}
+
+export async function checkProfilePin(p: { hash: string; salt: string }, pin: string) {
+  return (await pbkdf2(pin, p.salt)) === p.hash;
+}

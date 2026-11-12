@@ -9,6 +9,8 @@ import { unlock, watchAutoLock } from "../personal/lock";
 import { useT } from "../personal/useT";
 import { KeyPad } from "../views/app/kit";
 import { syncReminders } from "../personal/push";
+import { checkSession } from "../cloud/account";
+import { startSync } from "../cloud/sync";
 
 /* =====================================================================
    Runs once in the app shell:
@@ -29,6 +31,9 @@ export function SpaceRuntime() {
 
   useEffect(() => {
     initSpace();
+    // her account in the OVEREO backend (if this website has one): sign-in state + sync
+    startSync();
+    void checkSession();
     const stop = watchAutoLock();
     // agents react to her data — debounced so a burst of logging runs once
     let deb = 0;

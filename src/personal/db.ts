@@ -29,12 +29,20 @@ export function load<T>(ns: string, c: Collection, fallback: T): T {
   }
 }
 
+/** Listeners told about every write (the cloud sync engine uses this). */
+export const saveHooks = new Set<(ns: string, c: Collection, value: unknown) => void>();
+
 export function save(ns: string, c: Collection, value: unknown) {
   try {
     localStorage.setItem(nsKey(ns, c), JSON.stringify(value));
   } catch {
     // storage full or blocked (private mode) — the app keeps working in memory
   }
+  saveHooks.forEach((h) => {
+    try {
+      h(ns, c, value);
+    } catch {}
+  });
 }
 
 /** Erase one namespace only. */
@@ -50,6 +58,8 @@ export function wipe(ns: string) {
 /* ---------------------------- device meta ---------------------------- */
 export interface Meta {
   schemaVersion: number;
+  /** every profile kept on this device (her own, family, and signed-in ones) */
+  profiles?: string[];
   /** the signed-in account on this device (local accounts until a backend exists) */
   accountId: string | null;
   /** which space is showing */
@@ -95,7 +105,15 @@ function idb(): Promise<IDBDatabase | null> {
   });
 }
 
+/** Listeners told about every stored file (the cloud sync engine uploads it). */
+export const fileHooks = new Set<(ns: string, id: string, blob: Blob) => void>();
+
 export async function putFile(ns: string, id: string, blob: Blob) {
+  fileHooks.forEach((h) => {
+    try {
+      h(ns, id, blob);
+    } catch {}
+  });
   const db = await idb();
   if (!db) return false;
   return new Promise<boolean>((res) => {

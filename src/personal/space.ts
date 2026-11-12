@@ -37,8 +37,10 @@ export interface SpaceState {
   ready: boolean;
   mode: SpaceMode;
   ns: string;
-  /** her own account on this device (null until she creates one) */
+  /** the profile that's open on this device (null until she creates one) */
   own: Account | null;
+  /** every profile on this device — hers, family profiles, signed-in ones */
+  profiles: Account[];
   /** the account whose data is showing */
   account: Account | null;
   records: AnyRecord[];
@@ -62,6 +64,7 @@ let state: SpaceState = {
   mode: "sample",
   ns: "sample",
   own: null,
+  profiles: [],
   account: null,
   records: [],
   agents: defaultAgents(),
@@ -113,10 +116,20 @@ export function initSpace() {
   if (state.ready) return;
   const meta = loadMeta();
   const prefs = { ...DEFAULT_PREFS, ...load<Partial<Prefs>>(DEVICE, "prefs", {}) };
-  const own = meta.accountId ? load<Account | null>(realNs(meta.accountId), "account", null) : null;
+  const profiles = loadProfiles(meta);
+  const own = profiles.find((p) => p.id === meta.accountId) ?? profiles[0] ?? null;
   const mode: SpaceMode = own && meta.mode === "real" ? "real" : "sample";
-  state = { ...state, prefs, own, locked: !!(own && prefs.lock) };
+  state = { ...state, prefs, own, profiles, locked: !!(own && prefs.lock) };
   openNamespace(mode);
+}
+
+function loadProfiles(meta = loadMeta()): Account[] {
+  const ids = meta.profiles ?? (meta.accountId ? [meta.accountId] : []);
+  return ids.map((id) => load<Account | null>(realNs(id), "account", null)).filter((a): a is Account => !!a);
+}
+
+function saveProfileList(profiles: Account[], active: string | null, mode: SpaceMode) {
+  saveMeta({ ...loadMeta(), schemaVersion: SCHEMA_VERSION, profiles: profiles.map((p) => p.id), accountId: active, mode });
 }
 
 function openNamespace(mode: SpaceMode) {
@@ -142,7 +155,7 @@ function openNamespace(mode: SpaceMode) {
     feedback: load<Record<string, number>>(ns, "feedback", {}),
     mind: { topics: {}, votes: {}, ...load<Partial<MindMemory>>(ns, "mind", {}) },
   });
-  saveMeta({ ...loadMeta(), mode: state.mode, accountId: own?.id ?? null });
+  saveMeta({ ...loadMeta(), mode: state.mode, accountId: own?.id ?? null, profiles: state.profiles.map((p) => p.id) });
 }
 
 function seedSample() {
@@ -167,25 +180,61 @@ export function resetSample() {
 
 /* ------------------------------- account ------------------------------- */
 
-export function createAccount(a: Omit<Account, "id" | "createdAt">) {
-  const account: Account = { ...a, id: newId("acc"), createdAt: new Date().toISOString() };
+/** Create a profile and open it. `id` is given for profiles that live in the backend. */
+export function createAccount(a: Omit<Account, "id" | "createdAt"> & { id?: string; createdAt?: string }, opts: { open?: boolean } = {}) {
+  const account: Account = { ...a, id: a.id ?? newId("acc"), createdAt: a.createdAt ?? new Date().toISOString() };
   const ns = realNs(account.id);
+  const existed = load<Account | null>(ns, "account", null);
   save(ns, "account", account);
-  save(ns, "records", []);
-  saveMeta({ schemaVersion: SCHEMA_VERSION, accountId: account.id, mode: "real" });
-  space.set({ own: account });
+  if (!existed) save(ns, "records", []);
+  const profiles = [...state.profiles.filter((p) => p.id !== account.id), account];
+  space.set({ profiles });
+  if (opts.open === false) {
+    saveProfileList(profiles, state.own?.id ?? null, state.mode);
+    return account;
+  }
+  saveProfileList(profiles, account.id, "real");
+  space.set({ own: account, locked: false });
   openNamespace("real");
-  diary("you", "Created your private space");
+  if (!existed) diary("you", account.relation && account.relation !== "self" ? `Created ${account.name}'s profile` : "Created your private space");
   return account;
+}
+
+/** Open another profile on this device. (Check her PIN first — see ProfileGate.) */
+export function switchProfile(id: string) {
+  const p = state.profiles.find((x) => x.id === id);
+  if (!p) return;
+  space.set({ own: p, locked: false });
+  openNamespace("real");
 }
 
 export function updateAccount(patch: Partial<Account>) {
   if (!state.own) return;
   const own = { ...state.own, ...patch };
   save(realNs(own.id), "account", own);
-  space.set({ own, account: state.mode === "real" ? own : state.account });
+  space.set({ own, account: state.mode === "real" ? own : state.account, profiles: state.profiles.map((p) => (p.id === own.id ? own : p)) });
 }
 
+/** Update any profile's details (e.g. from the backend) without opening it. */
+export function saveProfile(a: Account) {
+  save(realNs(a.id), "account", a);
+  const profiles = state.profiles.some((p) => p.id === a.id) ? state.profiles.map((p) => (p.id === a.id ? a : p)) : [...state.profiles, a];
+  space.set({ profiles, ...(state.own?.id === a.id ? { own: a, account: state.mode === "real" ? a : state.account } : {}) });
+  saveProfileList(profiles, state.own?.id ?? null, state.mode);
+}
+
+/** Remove one profile and everything it holds from this device. */
+export function removeProfile(id: string) {
+  wipe(realNs(id));
+  const profiles = state.profiles.filter((p) => p.id !== id);
+  const wasOpen = state.own?.id === id;
+  const next = wasOpen ? (profiles[0] ?? null) : state.own;
+  space.set({ profiles, own: next, locked: false });
+  saveProfileList(profiles, next?.id ?? null, next ? state.mode : "sample");
+  if (wasOpen) openNamespace(next ? "real" : "sample");
+}
+
+/** Leave her space on this device (shows the sample). Her data stays. */
 export function signOut() {
   saveMeta({ ...loadMeta(), accountId: null, mode: "sample" });
   space.set({ own: null, locked: false });
@@ -195,12 +244,19 @@ export function signOut() {
 /** Delete her space completely from this device. */
 export function deleteMySpace() {
   if (!state.own) return;
-  wipe(realNs(state.own.id));
-  setPrefs({ lock: null });
-  // forget the email sign-in and push address on this device too
-  save(DEVICE, "auth", null);
-  save(DEVICE, "push", null);
-  signOut();
+  removeProfile(state.own.id);
+  if (!state.profiles.length) {
+    setPrefs({ lock: null });
+    // forget the email sign-in and push address on this device too
+    save(DEVICE, "auth", null);
+    save(DEVICE, "push", null);
+    signOut();
+  }
+}
+
+/** Re-read the open profile from storage (after a sync brought new data). */
+export function reloadOpenProfile() {
+  if (state.mode === "real" && state.own) openNamespace("real");
 }
 
 export function exportMySpace() {
