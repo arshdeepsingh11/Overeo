@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "../../../ui/Icon";
 import { navigate } from "../../../core/routes";
 import { teamById, type TeamId } from "../../../agents/team";
-import { talk, type Reply } from "../../../agents/client";
+import { routeTo, talk, type Reply } from "../../../agents/client";
 import { Character, type CharState } from "./Character";
+import { Avatar } from "./Avatar";
 
 /* =====================================================================
    Agent console — chat with one teammate.
@@ -15,7 +16,7 @@ import { Character, type CharState } from "./Character";
    buttons. Hand-offs switch to the right teammate in one tap.
    ===================================================================== */
 
-type Turn = { role: "user"; text: string } | { role: "agent"; agent: TeamId; reply: Reply };
+type Turn = { role: "user"; text: string } | { role: "agent"; agent: TeamId; reply: Reply } | { role: "switch"; from: TeamId; to: TeamId };
 
 export const MODE_LABEL: Record<string, string> = {
   device: "From your data · on your device",
@@ -49,16 +50,20 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
     const t = text.trim();
     if (!t || busy) return;
     setQ("");
-    const next: Turn[] = [...turns, { role: "user", text: t }];
+    // whose job is this question? the right teammate steps in
+    const who = deeper ? agentId : routeTo(t, agentId);
+    const next: Turn[] = [...turns, { role: "user", text: t }, ...(who !== agentId ? [{ role: "switch" as const, from: agentId, to: who }] : [])];
     setTurns(next);
+    if (who !== agentId) setAgentId(who);
     setState("thinking");
-    // this agent's own conversation only
+    // the answering agent's conversation (plus this question)
     const history = next
-      .filter((x) => x.role === "user" || x.agent === agentId)
+      .filter((x): x is Exclude<Turn, { role: "switch" }> => x.role !== "switch")
+      .filter((x) => x.role === "user" || x.agent === who)
       .map((x) => (x.role === "user" ? { role: "user" as const, content: x.text } : { role: "assistant" as const, content: x.reply.text }))
       .slice(-8);
-    const reply = await talk(agentId, history, { deeper });
-    setTurns((x) => [...x, { role: "agent", agent: agentId, reply }]);
+    const reply = await talk(who, history, { deeper });
+    setTurns((x) => [...x, { role: "agent", agent: who, reply }]);
     setState("speaking");
     setTimeout(() => setState((s) => (s === "speaking" ? "idle" : s)), 1800);
   };
@@ -69,7 +74,7 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
     <div className="asheet-root" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="asheet console" role="dialog" aria-modal="true" aria-label={`Chat with ${agent.name}`} style={{ ["--h" as string]: agent.hue }}>
         <div className="console-head">
-          <Character agent={agent} state={state} size={64} />
+          <Avatar agent={agent} state={state} size={64} />
           <div className="console-who">
             <b>{agent.name}</b>
             <span>{agent.title}</span>
@@ -101,8 +106,17 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
               <div key={i} className="cq">
                 {t.text}
               </div>
+            ) : t.role === "switch" ? (
+              <SwitchNote key={i} from={t.from} to={t.to} />
             ) : (
-              <AgentBubble key={i} reply={t.reply} onHandoff={(id) => setAgentId(id)} onDeeper={() => lastUser && void send(lastUser.text, true)} />
+              <div key={i} className="ca-wrap">
+                {turns.some((x) => x.role === "switch") && (
+                  <span className="ca-who" style={{ ["--h" as string]: teamById(t.agent)!.hue }}>
+                    {teamById(t.agent)!.name}
+                  </span>
+                )}
+                <AgentBubble reply={t.reply} onHandoff={(id) => setAgentId(id)} onDeeper={() => lastUser && void send(lastUser.text, true)} />
+              </div>
             ),
           )}
           {busy && (
@@ -131,6 +145,19 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
         </form>
         <p className="console-foot faint small">Educational, not a diagnosis · in an emergency call your local emergency number</p>
       </div>
+    </div>
+  );
+}
+
+function SwitchNote({ from, to }: { from: TeamId; to: TeamId }) {
+  const a = teamById(from)!;
+  const b = teamById(to)!;
+  return (
+    <div className="ca-switch" role="status" style={{ ["--h" as string]: b.hue }}>
+      <Character agent={b} size={30} label={false} state="handoff" />
+      <span>
+        <b>{b.name}</b> took this one — {b.title.toLowerCase()} is {b.name}'s job. <span className="faint">({a.name} passed it on.)</span>
+      </span>
     </div>
   );
 }

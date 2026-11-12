@@ -40,6 +40,8 @@ export interface SIAnswer {
   sharedFacts?: string[];
   /** the question, for "explain more" */
   question?: string;
+  /** the team agent whose job this question is (her space only) */
+  agent?: string;
 }
 
 export interface SIContext {

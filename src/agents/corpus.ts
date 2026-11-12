@@ -4,6 +4,7 @@ import { LAB_TESTS, labUrl } from "../content/bioaroLabs";
 import { STREAMS } from "../core/streams";
 import { LAB_INFO, SYMPTOM_INFO, PHASE_PLAIN } from "../personal/mind/knowledge";
 import { TEAM } from "./team";
+import { RESEARCH } from "../content/research-facts";
 
 /* =====================================================================
    The team's knowledge base — OVEREO's own content, nothing else.
@@ -51,16 +52,17 @@ const CATEGORY_TAGS: Record<Category, string[]> = {
 
 /** How OVEREO itself works — written for her, kept factual. */
 const ABOUT: Omit<Passage, "id">[] = [
-  { source: "About OVEREO", href: "/app", tags: ["app", "care"], text: "OVEREO is a women's precision-health app from the BioAro ecosystem (with NEYU, BioAro Labs, Advanced Cardiology and NEA). It learns from what she logs — periods, symptoms, mood, sleep, temperature, blood pressure, medicines and lab results — and explains her patterns. It is educational and does not diagnose." },
-  { source: "Your privacy", href: "/app/me", tags: ["app", "privacy"], text: "Her space lives on her device. Sample data (Maya) and her real data are kept completely separate. She can export everything as a file, delete her space, lock the app with a PIN, and turn on discreet mode to hide health details on screen." },
-  { source: "Your privacy", href: "/app/me", tags: ["app", "privacy"], text: "When the live brain is used, OVEREO shares only short facts about her patterns — never her name, email or raw entries — and she can switch personal context off for any question." },
-  { source: "How the agents work", href: "/app/agents", tags: ["app", "reminders"], text: "Her agents only suggest. Each suggestion lands in the Inbox; she can say yes, change it, or tap 'Not for me'. Approved actions are recorded in her Diary. Two 'not relevant' answers stop that kind of suggestion. In each agent's settings she chooses what it may do, what it must never do, how often it can suggest something, and quiet hours." },
-  { source: "Reminders and notifications", href: "/app/me", tags: ["reminders", "app"], text: "Reminders appear at the times she usually checks in and respect quiet hours. With notifications on, OVEREO can reach her while it's open; on supported devices it can also reach her when it's closed (on iPhone, after adding OVEREO to the Home Screen). Discreet mode uses neutral wording." },
-  { source: "Visit summary", href: "/app/visit", tags: ["visit", "care"], text: "The Visit summary puts her cycle, symptoms, mood and sleep, blood pressure, labs, medicines and the questions worth asking on one page she can print or save as a PDF for her clinician." },
-  { source: "Reading a lab report", href: "/app/track", tags: ["labs"], text: "She can add a lab report as a PDF or photo. OVEREO reads it on her device, finds each result, its range and the collection date, converts units, and asks her to check every value before anything is saved." },
-  { source: "What-ifs", href: "/app", tags: ["mood", "sleep"], text: "What-ifs use her own data, for example how her mood moves with her sleep. They show a likely range and how sure OVEREO is, and they show patterns — not proof of cause." },
+  { source: "About OVEREO", href: "/app", tags: ["app", "care"], text: "OVEREO is a women's precision-health app from the BioAro ecosystem (with NEYU, BioAro Labs, Advanced Cardiology and NEA). It learns from what you log — periods, symptoms, mood, sleep, temperature, blood pressure, medicines and lab results — and explains your patterns in plain words. It is educational and does not diagnose." },
+  { source: "Your privacy", href: "/app/me", tags: ["app", "privacy"], text: "Your space lives on your device. The sample (Maya) and your real data are kept completely separate. You can export everything as a file, delete your space, lock the app with a PIN, and turn on discreet mode to hide health details on screen." },
+  { source: "Your privacy", href: "/app/me", tags: ["app", "privacy"], text: "When the live brain (Xevyo) is used, OVEREO shares only short facts about your patterns — never your name, email or raw entries — and you can switch this sharing off in Me at any time." },
+  { source: "How the agents work", href: "/app/agents", tags: ["app", "reminders"], text: "Your agents only suggest. Each suggestion lands in your Inbox; you can say yes, change it, or tap 'Not for me'. Approved actions are recorded in your Diary. Two 'not relevant' answers stop that kind of suggestion. In each agent's settings you choose what it may do, what it must never do, how often it can suggest something, and quiet hours. Turn any agent on or off on the Agents page." },
+  { source: "Reminders and notifications", href: "/app/me", tags: ["reminders", "app"], text: "Reminders appear at the times you usually check in and respect quiet hours. With notifications on, OVEREO can reach you while it's open; on supported devices it can also reach you when it's closed (on iPhone, after adding OVEREO to the Home Screen). Discreet mode uses neutral wording." },
+  { source: "Visit summary", href: "/app/visit", tags: ["visit", "care"], text: "The Visit summary puts your cycle, symptoms, mood and sleep, blood pressure, labs, medicines and the questions worth asking on one page you can print or save as a PDF for your clinician." },
+  { source: "Reading a lab report", href: "/app/track", tags: ["labs"], text: "You can add a lab report as a PDF or photo. OVEREO reads it on your device, finds each result, its range and the collection date, converts units, and asks you to check every value before anything is saved." },
+  { source: "What-ifs", href: "/app", tags: ["mood", "sleep"], text: "What-ifs use your own data, for example how your mood moves with your sleep. They show a likely range and how sure OVEREO is, and they show patterns — not proof of cause." },
   { source: "Emergency signs", tags: ["safety", "care", "mood", "menstrual", "fertility", "heart"], text: "Call local emergency services now for chest pain or pressure, trouble breathing, stroke signs (face drooping, arm weakness, speech trouble), fainting, very heavy bleeding (a pad or tampon every hour for several hours), severe sudden pain — especially in pregnancy — or thoughts of self-harm. In Canada and the US, 988 reaches a suicide crisis line." },
-  { source: "Ordering a test", href: "/tests", tags: ["labs", "tests", "bioaro"], text: "BioAro Labs tests can be opened from OVEREO; ordering and payment happen on BioAro's own site and checkout. OVEREO recommends tests only when her data or goals make them useful, and her clinician can order them too." },
+  { source: "Translation (ECHO)", href: "/why", tags: ["app", "reminders", "translate"], text: "ECHO, the translation agent, can translate any word, sentence, paragraph or the whole page into your language. Turn ECHO on in Why OVEREO, on the Agents page or in Me, then tap the ECHO button, or select any text and tap Translate. It uses your browser's own translator when it can, and the live brain otherwise." },
+  { source: "Ordering a test", href: "/tests", tags: ["labs", "tests", "bioaro"], text: "BioAro Labs tests can be opened from OVEREO; ordering and payment happen on BioAro's own site and checkout. OVEREO recommends tests only when your data or goals make them useful, and your clinician can order them too." },
 ];
 
 let cache: Passage[] | null = null;
@@ -111,6 +113,9 @@ export function corpus(): Passage[] {
 
   for (const [name, i] of Object.entries(SYMPTOM_INFO))
     add({ source: `Symptom guide: ${name}`, href: "/app/track?t=symptom", tags: ["symptoms", "cycle", ...(/flash|sweat/i.test(name) ? ["menopause"] : []), ...(/fatigue/i.test(name) ? ["mood", "sleep"] : [])], text: `${name}: ${i.about} What can help: ${i.helps.join("; ")}. ${i.see}` });
+
+  // checked research facts (WHO, CDC, ASRM, AHA, IOF, FIGO, AASM…)
+  for (const r of RESEARCH) add({ source: r.source.split(" — ")[0].split(" (")[0], href: r.url, tags: ["research", ...r.tags], text: `${r.title}: ${r.text}` });
 
   for (const [phase, t] of Object.entries(PHASE_PLAIN)) add({ source: "Cycle phases", tags: ["cycle"], text: `The ${phase} phase is ${t}.` });
 

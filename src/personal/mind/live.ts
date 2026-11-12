@@ -108,8 +108,8 @@ async function failed(res: Response) {
 }
 
 /** Stream an answer to an open question, grounded in Mind's facts. */
-export async function askLive(input: { question: string; history: { role: "user" | "assistant"; content: string }[]; facts: string[]; language: string; onText: (t: string) => void; signal?: AbortSignal }): Promise<{ ok: true; text: string } | { ok: false; reason: string; partial?: string }> {
-  const r = await post({ mode: "chat", messages: [...input.history.slice(-8), { role: "user", content: input.question }], facts: input.facts, language: input.language }, 25_000, input.signal);
+export async function askLive(input: { question: string; history: { role: "user" | "assistant"; content: string }[]; facts: string[]; language: string; persona?: { name: string; title: string; briefing: string }; onText: (t: string) => void; signal?: AbortSignal }): Promise<{ ok: true; text: string } | { ok: false; reason: string; partial?: string }> {
+  const r = await post({ mode: "chat", messages: [...input.history.slice(-8), { role: "user", content: input.question }], facts: input.facts, language: input.language, persona: input.persona }, 25_000, input.signal);
   if (!r.ok) return r;
   if (!r.res.ok || !r.res.body) return { ok: false, reason: await failed(r.res) };
   const reader = r.res.body.getReader();

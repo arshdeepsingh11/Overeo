@@ -95,6 +95,7 @@ export async function POST(req: Request) {
     context?: Record<string, unknown>;
     suggestion?: { title: string; body: string; why: string[] };
     text?: string;
+    persona?: { name?: string; title?: string; briefing?: string };
   };
   try {
     payload = JSON.parse(raw);
@@ -166,7 +167,10 @@ export async function POST(req: Request) {
     : payload.context
       ? `\n\nContext (JSON):\n${JSON.stringify(payload.context).slice(0, 9000)}`
       : "\n\nNo personal data is available for this question — answer in general terms and say so.";
-  const system = `${RULES}\n- Reply in ${lang}.${about}`;
+  // the OVEREO team agent whose job this question is
+  const ps = payload.persona;
+  const persona = ps?.name && /^[A-Za-z ]{2,20}$/.test(ps.name) ? `\n\nYou are answering as ${ps.name}, the ${String(ps.title ?? "").slice(0, 40)} on the OVEREO team. ${String(ps.briefing ?? "").slice(0, 600)}` : "";
+  const system = `${RULES}${persona}\n- Reply in ${lang}.${about}`;
 
   let upstream: Response;
   try {

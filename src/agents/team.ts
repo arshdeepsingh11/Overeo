@@ -13,9 +13,9 @@ import type { AgentId } from "../personal/types";
    to hand off to a teammate.
    ===================================================================== */
 
-export type TeamId = AgentId | "ora" | "si";
+export type TeamId = AgentId | "ora" | "si" | "echo";
 
-export type Shape = "moon" | "flask" | "leaf" | "bird" | "hex" | "star" | "flower" | "wave" | "shield" | "orb";
+export type Shape = "moon" | "flask" | "leaf" | "bird" | "hex" | "star" | "flower" | "wave" | "shield" | "orb" | "echo";
 
 export interface TeamAgent {
   id: TeamId;
@@ -37,6 +37,8 @@ export interface TeamAgent {
   starters: string[];
   /** only appears in team runs */
   networkOnly?: boolean;
+  /** a helper that works across the app (ECHO) — not part of chats or team runs */
+  tool?: boolean;
 }
 
 export const SHARED_LIMITS = [
@@ -82,6 +84,7 @@ export const SITE_MAP: { route: string; label: string }[] = [
   { route: "/specialties/mind-sleep", label: "Mind & sleep guide" },
   { route: "/specialties/longevity", label: "Longevity guide" },
   { route: "/privacy", label: "Privacy" },
+  { route: "/why", label: "Why OVEREO" },
 ];
 export const allowedRoute = (r: string) => SITE_MAP.some((x) => x.route === r);
 
@@ -95,9 +98,9 @@ export const TEAM: TeamAgent[] = [
     does: ["period predictions and late periods", "cycle phases and what they mean", "regularity (FIGO ranges)", "period pain, PMS and cycle symptoms", "PCOS and endometriosis basics"],
     doesNot: ["contraception decisions", "pregnancy diagnosis", "medicines"],
     briefing: "You are her cycle guide. Start from her own cycle facts (day, phase, next period window, lengths). Explain phases in plain words. For pain, irregular cycles or very heavy bleeding, say when to see a clinician and offer the visit summary. Fertility planning → BLOOM. Menopause → MAEVE. Lab values → VERA.",
-    keys: ["period", "periods", "heavy", "cycle", "late", "pms", "cramp", "cramps", "pelvic", "pelvic pain", "period pain", "phase", "ovulation", "bleeding", "spotting", "pcos", "endometriosis", "irregular", "flow"],
+    keys: ["period", "periods", "heavy", "cycle", "late", "pms", "cramp", "cramps", "pelvic", "pelvic pain", "period pain", "phase", "ovulation", "bleeding", "spotting", "pcos", "endometriosis", "adenomyosis", "fibroids", "uterus", "menstrual", "irregular", "flow"],
     tags: ["cycle", "menstrual", "symptoms", "pcos", "endometriosis", "hormones"],
-    hue: 340,
+    hue: 335,
     shape: "moon",
     starters: ["When is my next period?", "Is my cycle regular?", "Why are my cramps worse some months?"],
   },
@@ -112,7 +115,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her lab interpreter. Read every value in the light of its unit, range, date and cycle day. Say plainly if it's in or out of the report's range and what that is commonly associated with — never a diagnosis. Recommend tests only when her data or goals justify it (not as sales). Medicine questions → IRIS. Preparing for a visit → SAGE.",
     keys: ["lab", "labs", "result", "results", "heavy", "ferritin", "iron", "vitamin d", "amh", "tsh", "thyroid", "hba1c", "a1c", "crp", "ldl", "cholesterol", "estradiol", "progesterone", "testosterone", "fsh", "hemoglobin", "test", "tests", "blood test", "report"],
     tags: ["labs", "tests", "bioaro"],
-    hue: 25,
+    hue: 28,
     shape: "flask",
     starters: ["What does my ferritin mean?", "Which tests would actually help me?", "When should I retest vitamin D?"],
   },
@@ -127,7 +130,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her care navigator. Help her walk into a visit with dates, patterns and 3–5 good questions. Point to the Visit summary page. Explain which kind of specialist usually covers a concern, using the specialty guides. Never book or promise appointments.",
     keys: ["doctor", "visit", "prepare", "appointment", "specialist", "gynecologist", "gynaecologist", "clinic", "referral", "questions", "summary", "heart", "gut", "skin", "bone", "acne", "bloating"],
     tags: ["care", "specialties", "heart", "gut", "skin", "bone", "visit"],
-    hue: 300,
+    hue: 165,
     shape: "leaf",
     starters: ["Help me prepare for my gynaecologist", "What should I ask my doctor?", "Which specialist covers pelvic pain?"],
   },
@@ -142,7 +145,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her reminder keeper. Use her usual check-in time and quiet hours. Keep it short. For anything medical, hand off to the right teammate.",
     keys: ["remind", "reminder", "reminders", "notification", "notifications", "alarm", "streak", "habit", "quiet hours"],
     tags: ["reminders", "app"],
-    hue: 315,
+    hue: 198,
     shape: "bird",
     starters: ["When do I usually check in?", "How do notifications work when the app is closed?"],
   },
@@ -157,7 +160,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her medicine companion. Use only what she has logged. Never give a dose or tell her to change a medicine; instead, give 2–3 clear questions for her pharmacist or prescriber. Explain pharmacogenomics in general terms only.",
     keys: ["medicine", "medication", "meds", "pill", "pills", "dose", "tablet", "supplement", "supplements", "pharmacist", "prescription", "side effect", "birth control", "pharmacogenomics"],
     tags: ["meds", "genome"],
-    hue: 290,
+    hue: 262,
     shape: "hex",
     starters: ["What have I logged this week?", "What should I ask my pharmacist?"],
   },
@@ -172,7 +175,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her mood and sleep companion. Lead with empathy, then her own patterns (phase effects, sleep–mood links). Suggest small, practical steps. If she mentions self-harm or feeling unsafe, give emergency guidance first (988 in Canada/US, or local emergency number).",
     keys: ["mood", "sad", "low", "anxious", "anxiety", "stress", "stressed", "sleep", "insomnia", "tired", "exhausted", "fatigue", "energy", "pmdd", "irritable", "depressed"],
     tags: ["mood", "sleep", "mind-sleep"],
-    hue: 320,
+    hue: 42,
     shape: "star",
     starters: ["Why do I feel low before my period?", "What if I sleep an hour more?", "Why am I always tired?"],
   },
@@ -187,7 +190,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her fertility planner. Use her cycle estimate and labs. Be clear that AMH shows quantity, not quality, and doesn't predict natural pregnancy on its own. Calendar estimates are not contraception. Never quote success rates or promise outcomes.",
     keys: ["fertile", "fertility", "pregnant", "pregnancy", "conceive", "ttc", "egg", "eggs", "egg freezing", "freeze", "amh", "ivf", "baby", "ovarian reserve"],
     tags: ["fertility"],
-    hue: 350,
+    hue: 348,
     shape: "flower",
     starters: ["When is my fertile window?", "What does my AMH mean for egg freezing?"],
   },
@@ -202,9 +205,25 @@ export const TEAM: TeamAgent[] = [
     briefing: "You are her menopause coach. Explain the stages plainly, connect her symptoms to the guide, and list what to discuss with a clinician (including that effective treatments exist). Never recommend a specific treatment or dose.",
     keys: ["menopause", "perimenopause", "hot flash", "hot flashes", "night sweats", "midlife", "hrt", "bone", "osteoporosis", "dryness"],
     tags: ["menopause", "bone"],
-    hue: 20,
+    hue: 14,
     shape: "wave",
     starters: ["Could I be in perimenopause?", "What helps with night sweats?"],
+  },
+  {
+    id: "echo",
+    name: "ECHO",
+    title: "Translator",
+    role: "Translates any word, sentence or whole page into your language — tap ECHO, or select text and tap Translate.",
+    personality: "Quick, quiet and exact with numbers.",
+    does: ["translating the whole page", "translating any word or sentence you select", "reading a translation aloud"],
+    doesNot: ["changing numbers or medical meaning", "translating your private entries off your device without your say"],
+    briefing: "You translate OVEREO's screens. Keep every number, unit and name exactly as written.",
+    keys: [],
+    tags: ["translate"],
+    hue: 140,
+    shape: "echo",
+    starters: [],
+    tool: true,
   },
   {
     id: "ora",
@@ -217,7 +236,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You verify. Keep only statements supported by the context or her facts.",
     keys: [],
     tags: [],
-    hue: 200,
+    hue: 205,
     shape: "shield",
     starters: [],
     networkOnly: true,
@@ -233,7 +252,7 @@ export const TEAM: TeamAgent[] = [
     briefing: "You present. Write ONE short answer for her using only the verified notes. Credit teammates by name where useful.",
     keys: [],
     tags: [],
-    hue: 330,
+    hue: 322,
     shape: "orb",
     starters: [],
     networkOnly: true,
@@ -241,4 +260,4 @@ export const TEAM: TeamAgent[] = [
 ];
 
 export const teamById = (id: string) => TEAM.find((a) => a.id === id);
-export const SPECIALISTS = TEAM.filter((a) => !a.networkOnly);
+export const SPECIALISTS = TEAM.filter((a) => !a.networkOnly && !a.tool);

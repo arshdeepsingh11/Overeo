@@ -1,7 +1,7 @@
 import { space } from "../personal/space";
 import { factsFor, model, think } from "../personal/mind";
 import { cooling, coolDown, REASON } from "../personal/mind/live";
-import { compose, guarded, plan, prepare, type AgentReply, type Source } from "./engine";
+import { compose, guarded, plan, prepare, scoreAgents, type AgentReply, type Source } from "./engine";
 import { teamById, type TeamId } from "./team";
 import { verifyNotes } from "./validate";
 
@@ -44,11 +44,55 @@ const OWNS: Record<string, TeamId[]> = {
   learned: ["cycle", "mood", "labs", "visit", "reminders", "meds", "fertility", "meno"],
 };
 
+/**
+ * Who should answer this? The agent whose job it is: first from what
+ * OVEREO Mind understood, then from the words she used. null = nobody
+ * in particular (Overeo SI answers).
+ */
+export function pickAgent(q: string, intent?: string): TeamId | null {
+  // asking for a reminder is always PIP's job, whatever it's about
+  if (/^\s*(please\s+)?(remind me|set (a|up a) reminder|nudge me)\b/i.test(q)) return "reminders";
+  const ranked = scoreAgents(q);
+  const top = ranked[0];
+  const owners = intent ? OWNS[intent] : undefined;
+  if (owners && owners.length <= 3) {
+    // the owner the words agree with most, else the first owner
+    const best = owners.map((id) => ({ id, s: ranked.find((x) => x.a.id === id)?.s ?? 0 })).sort((a, b) => b.s - a.s)[0];
+    if (top && top.s >= best.s + 2) return top.a.id;
+    return best.id;
+  }
+  return top && top.s >= 1 ? top.a.id : null;
+}
+
 function context(q: string) {
   const s = space.get();
   const personalise = s.account?.consent.personalise !== false;
   const { u, a, m } = think(q, s);
   return { facts: personalise ? factsFor(m, u) : [], mind: personalise ? a : null, intent: u.intent, lang: s.prefs.lang };
+}
+
+/**
+ * In a live chat: should someone else take this question? Stays with the
+ * current agent unless the question is clearly another agent's job.
+ */
+export function routeTo(q: string, current: TeamId): TeamId {
+  if (!q.trim() || teamById(current)?.networkOnly) return current;
+  let intent: string | undefined;
+  try {
+    intent = context(q).intent;
+  } catch {}
+  if (intent === "emergency") return current;
+  const next = pickAgent(q, intent);
+  if (!next || next === current) return current;
+  if (next === "reminders") return next;
+  const owners = intent ? OWNS[intent] : undefined;
+  // her data question belongs first to its owner (fertile window → BLOOM)
+  if (owners && owners.length <= 3 && owners[0] === next) return next;
+  const ranked = scoreAgents(q);
+  const mine = ranked.find((x) => x.a.id === current)?.s ?? 0;
+  const theirs = ranked.find((x) => x.a.id === next)?.s ?? 0;
+  // otherwise a clear win only — follow-ups like "why?" stay put
+  return theirs >= Math.max(1, mine + 1) ? next : current;
 }
 
 export async function talk(agentId: TeamId, history: { role: "user" | "assistant"; content: string }[], opts: { deeper?: boolean; signal?: AbortSignal } = {}): Promise<Reply> {
@@ -76,7 +120,7 @@ export async function talk(agentId: TeamId, history: { role: "user" | "assistant
   if (typeof navigator !== "undefined" && navigator.onLine === false) return offline("offline");
   if (cooling()) return offline("upstream");
   try {
-    const res = await fetch("/api/agents/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agentId, messages: history.slice(-8), facts, language: lang }), signal: opts.signal ?? AbortSignal.timeout(30_000) });
+    const res = await fetch("/api/agents/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agentId, messages: history.slice(-8), facts, language: lang }), signal: opts.signal ?? AbortSignal.timeout(15_000) });
     const j = (await res.json().catch(() => ({}))) as Partial<AgentReply> & { fallback?: boolean; reason?: string };
     if (!res.ok || j.fallback || typeof j.text !== "string") {
       const reason = j.reason ?? (res.status === 404 || res.status === 405 ? "not-configured" : "upstream");

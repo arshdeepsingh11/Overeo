@@ -8,6 +8,8 @@ import { learn, siContext } from "../personal/patterns";
 import { think, factsFor } from "../personal/mind";
 import type { MindAnswer } from "../personal/mind/answer";
 import { askLive, LIVE_ENDPOINT, REASON, coolDown, cooling } from "../personal/mind/live";
+import { pickAgent } from "../agents/client";
+import { teamById } from "../agents/team";
 
 /* ------------------------------------------------------------------ *
  * Provider — who answers.
@@ -105,7 +107,11 @@ export async function ask(
   signal?: AbortSignal,
 ): Promise<{ answer: SIAnswer; remote: boolean }> {
   const sp = space.get();
-  if (inPortal() && sp.ready) return askPersonal(q, ctx, history, onText, signal);
+  if (inPortal() && sp.ready) {
+    // the agent whose job this is answers (and its persona guides the live brain)
+    const r = await askPersonal(q, ctx, history, onText, signal);
+    return r;
+  }
   return askDemo(q, ctx, history, onText, signal);
 }
 
@@ -116,12 +122,17 @@ async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], on
   const explain = raw.match(/^explain more(?: about)?:\s*(.+)$/i);
   const q = explain ? explain[1] : raw;
   const { u, a: mind, m } = think(q, sp);
+  const agentId = u.intent === "emergency" ? null : pickAgent(q, u.intent);
+  const agent = agentId ? teamById(agentId) : undefined;
+  const tag = <T extends { answer: SIAnswer; remote: boolean }>(r: T): T => ({ ...r, answer: { ...r.answer, agent: agent?.id } });
   if (u.intent !== "general") noteTopic(u.intent);
   const records = m.engagement.total;
   const personalise = ctx.useProfile && sp.account?.consent.personalise !== false;
 
   // 1. emergencies — never wait for a network
   if (u.intent === "emergency" && mind) return { answer: fromMind(mind, q, records), remote: false };
+  return tag(await answerAs());
+  async function answerAs(): Promise<{ answer: SIAnswer; remote: boolean }> {
 
   // the site's general knowledge, without the demo persona (never about "her" sample profile)
   let siteCache: SIAnswer | null = null;
@@ -175,6 +186,7 @@ async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], on
     history: history.slice(-8).map((x) => ({ role: x.role === "si" ? "assistant" : "user", content: x.role === "si" ? (x.answer?.summary ?? x.text) : x.text })),
     facts,
     language: sp.prefs.lang,
+    persona: agent ? { name: agent.name, title: agent.title, briefing: agent.briefing } : undefined,
     onText,
     signal,
   });
@@ -199,6 +211,7 @@ async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], on
       limits: "Written by the live brain from the facts shown. Checked for doses, diagnoses and invented numbers.",
     },
   };
+}
 }
 
 function withExplain(a: SIAnswer): SIAnswer {

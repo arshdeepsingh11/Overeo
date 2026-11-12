@@ -19,6 +19,8 @@ import { runMindAction } from "../personal/mind/act";
 import { model } from "../personal/mind";
 import type { MindAction } from "../personal/mind/answer";
 import { sureLabel } from "../personal/mind/stats";
+import { Character } from "../views/app/team/Character";
+import { teamById } from "../agents/team";
 
 /* =====================================================================
    Overeo SI — Symbiotic Intelligence.
@@ -413,6 +415,18 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
           ))}
         </ol>
       )}
+      {a.agent && teamById(a.agent) && (() => {
+        const ag = teamById(a.agent)!;
+        return (
+          <div className="si-agent" style={{ "--h": ag.hue } as CSSProperties} data-agent={ag.id}>
+            <Character agent={ag} size={34} label={false} state={done ? "idle" : "speaking"} />
+            <span>
+              <b>{ag.name}</b> · {ag.title}
+              <small>Answering — this is their job</small>
+            </span>
+          </div>
+        );
+      })()}
       <h3 className="si-title">{a.title}</h3>
       <p className="si-sum">
         {summary}
