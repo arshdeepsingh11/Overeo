@@ -20,6 +20,7 @@ import { model } from "../personal/mind";
 import type { MindAction } from "../personal/mind/answer";
 import { sureLabel } from "../personal/mind/stats";
 import { Character } from "../views/app/team/Character";
+import { logChat as saveChat } from "../cloud/sync";
 import { teamById } from "../agents/team";
 
 /* =====================================================================
@@ -114,6 +115,14 @@ export function OvereoSI() {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: store.get().reducedMotion ? "auto" : "smooth" });
   }, [msgs]);
 
+  // keep the conversation in her account (signed-in profiles only)
+  const convId = useRef(uid("c"));
+  const logChat = (q: string, a: SIAnswer) =>
+    saveChat(convId.current, "si", q, [
+      { id: uid("m"), role: "user", text: q },
+      { id: uid("m"), role: "assistant", agent: a.agent ?? null, text: [a.title, a.summary, ...(a.points ?? [])].join("\n"), meta: { source: a.source } },
+    ]);
+
   const send = useCallback(
     async (text: string) => {
       const q = text.trim();
@@ -132,18 +141,34 @@ export function OvereoSI() {
       const ac = new AbortController();
       abort.current = ac;
       try {
+        let instant = false;
         const { answer, remote } = await ask(
           q,
           { ...ctx, section: origin },
           msgs,
-          (partial) => setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, status: "streaming", text: partial, remote: true } : x))),
+          // once an instant answer is showing, the live one replaces it when it's complete (no flicker)
+          (partial) => !instant && setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, status: "streaming", text: partial, remote: true } : x))),
           ac.signal,
+          {
+            onAgent: (agent) => setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, agent } : x))),
+            onInstant: (a) => {
+              instant = true;
+              setOrb("idle");
+              setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, answer: a, status: "done", remote: false } : x)));
+            },
+          },
         );
+        if (instant) {
+          setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, answer, status: "done", remote: true, upgraded: remote } : x)));
+          logChat(q, answer);
+          return;
+        }
         // run instant effects (theme, mood…) now; navigation after the user has seen the reply
         const fx = answer.effects ?? [];
         const nav = fx.some((c) => c.type === "goto" || c.type === "mode");
         if (!nav) fx.forEach((c) => run(c));
         setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, answer, status: "streaming", remote } : x)));
+        logChat(q, answer);
         if (voiceOut) {
           setOrb("speaking");
           speak(answer.summary, undefined, () => setOrb("idle"));
@@ -281,7 +306,12 @@ export function OvereoSI() {
             </div>
           ) : (
             <div className="si-thread">
-              {msgs.map((m) => (m.role === "user" ? <div key={m.id} className="si-q">{m.text.replace(/^explain more:\s*/i, "Explain more: ")}</div> : <SIReply key={m.id} msg={m} onAsk={(t) => void send(t)} />))}
+              {msgs.map((m, i) => {
+                if (m.role === "user") return <div key={m.id} className="si-q">{m.text.replace(/^explain more:\s*/i, "Explain more: ")}</div>;
+                // who answered the previous question — so a hand-over to another agent is shown
+                const prev = msgs.slice(0, i).reverse().find((x) => x.role === "si" && (x.agent || x.answer?.agent));
+                return <SIReply key={m.id} msg={m} prevAgent={prev ? (prev.agent ?? prev.answer?.agent ?? null) : null} onAsk={(t) => void send(t)} />;
+              })}
             </div>
           )}
         </div>
@@ -352,7 +382,7 @@ export function OvereoSI() {
 
 /* --------------------------------- reply --------------------------------- */
 
-function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void }) {
+function SIReply({ msg, onAsk, prevAgent }: { msg: SIMessage; onAsk: (t: string) => void; prevAgent?: string | null }) {
   const a = msg.answer;
   const [step, setStep] = useState(0); // trace steps revealed
   const [words, setWords] = useState(0);
@@ -361,7 +391,7 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
 
   // reveal the "working" trace, then stream the summary word by word
   useEffect(() => {
-    if (!a || msg.remote) {
+    if (!a || msg.remote || a.refining) {
       if (a) setDone(true);
       return;
     }
@@ -394,18 +424,41 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
     return () => clearInterval(tTrace);
   }, [a, msg.remote, reduce]);
 
+  const who = msg.agent ? teamById(msg.agent) : a?.agent ? teamById(a.agent) : undefined;
+  const from = prevAgent && who && prevAgent !== who.id ? teamById(prevAgent) : undefined;
+  const handover = from && who && (
+    <div className="si-handover" role="status" style={{ "--h": who.hue, "--h0": from.hue } as CSSProperties}>
+      <Character agent={from} size={26} label={false} state="handoff" />
+      <span className="si-handover-beam" aria-hidden="true" />
+      <Character agent={who} size={30} label={false} state="speaking" />
+      <span>
+        <b>{who.name}</b> takes this — {who.title.toLowerCase()} is {who.name}'s job
+      </span>
+    </div>
+  );
   if (!a) {
     return (
       <div className="si-a thinking">
+        {handover}
+        {who && !msg.text && (
+          <div className="si-agent is-working" style={{ "--h": who.hue } as CSSProperties} data-agent={who.id}>
+            <Character agent={who} size={34} label={false} state="thinking" />
+            <span>
+              <b>{who.name}</b> · {who.title}
+              <small>Looking at your data and OVEREO's guides…</small>
+            </span>
+          </div>
+        )}
         {msg.text ? <p className="si-sum">{msg.text}</p> : <div className="si-dots"><span /><span /><span /></div>}
       </div>
     );
   }
 
   const trace = a.trace ?? [];
-  const summary = msg.remote ? a.summary : a.summary.split(/\s+/).slice(0, words).join(" ");
+  const summary = msg.remote || a.refining ? a.summary : a.summary.split(/\s+/).slice(0, words).join(" ");
   return (
-    <article className={`si-a tone-${a.tone ?? "info"}`}>
+    <article className={`si-a tone-${a.tone ?? "info"} ${msg.upgraded ? "is-upgraded" : ""}`}>
+      {handover}
       {!msg.remote && trace.length > 0 && (
         <ol className={`si-trace ${done ? "folded" : ""}`} aria-label="How Overeo SI worked on this">
           {trace.map((t, i) => (
@@ -422,7 +475,7 @@ function SIReply({ msg, onAsk }: { msg: SIMessage; onAsk: (t: string) => void })
             <Character agent={ag} size={34} label={false} state={done ? "idle" : "speaking"} />
             <span>
               <b>{ag.name}</b> · {ag.title}
-              <small>Answering — this is their job</small>
+              <small>{a.refining ? "Instant answer · getting more detail…" : msg.upgraded ? "Updated with more detail ✓" : "Answering — this is their job"}</small>
             </span>
           </div>
         );

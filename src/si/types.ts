@@ -42,6 +42,8 @@ export interface SIAnswer {
   question?: string;
   /** the team agent whose job this question is (her space only) */
   agent?: string;
+  /** shown instantly from the device while the live brain adds detail */
+  refining?: boolean;
 }
 
 export interface SIContext {
@@ -57,4 +59,8 @@ export interface SIMessage {
   answer?: SIAnswer;
   status?: "thinking" | "streaming" | "done";
   remote?: boolean;
+  /** the agent taking this question (set before the answer arrives) */
+  agent?: string | null;
+  /** the instant answer was replaced by the live brain's fuller one */
+  upgraded?: boolean;
 }

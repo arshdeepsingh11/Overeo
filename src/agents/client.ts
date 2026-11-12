@@ -17,7 +17,7 @@ import { verifyNotes } from "./validate";
               run it, the same plan runs on the device and says "demo".
    ===================================================================== */
 
-export type ReplyMode = AgentReply["mode"] | "device";
+export type ReplyMode = AgentReply["mode"] | "device" | "instant" | "guides";
 export type Reply = Omit<AgentReply, "mode"> & { mode: ReplyMode };
 
 const LIVE = process.env.NEXT_PUBLIC_SI_LIVE !== "0";
@@ -95,7 +95,7 @@ export function routeTo(q: string, current: TeamId): TeamId {
   return theirs >= Math.max(1, mine + 1) ? next : current;
 }
 
-export async function talk(agentId: TeamId, history: { role: "user" | "assistant"; content: string }[], opts: { deeper?: boolean; signal?: AbortSignal } = {}): Promise<Reply> {
+export async function talk(agentId: TeamId, history: { role: "user" | "assistant"; content: string }[], opts: { deeper?: boolean; signal?: AbortSignal; onInstant?: (r: Reply) => void } = {}): Promise<Reply> {
   const q = history[history.length - 1].content;
   const { facts, mind, intent, lang } = context(q);
   const p = prepare(agentId, q, facts);
@@ -119,6 +119,11 @@ export async function talk(agentId: TeamId, history: { role: "user" | "assistant
   if (!LIVE) return offline("not-configured");
   if (typeof navigator !== "undefined" && navigator.onLine === false) return offline("offline");
   if (cooling()) return offline("upstream");
+  // answer straight away from OVEREO's guides; the live brain's fuller answer replaces it when ready
+  if (opts.onInstant) {
+    const now = offline("upstream");
+    if (!now.text.startsWith("That isn't in what I know yet")) opts.onInstant({ ...now, mode: "instant", note: undefined });
+  }
   try {
     const res = await fetch("/api/agents/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agentId, messages: history.slice(-8), facts, language: lang }), signal: opts.signal ?? AbortSignal.timeout(15_000) });
     const j = (await res.json().catch(() => ({}))) as Partial<AgentReply> & { fallback?: boolean; reason?: string };

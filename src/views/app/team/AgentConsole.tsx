@@ -6,6 +6,7 @@ import { Icon } from "../../../ui/Icon";
 import { navigate } from "../../../core/routes";
 import { teamById, type TeamId } from "../../../agents/team";
 import { routeTo, talk, type Reply } from "../../../agents/client";
+import { logChat as saveChat } from "../../../cloud/sync";
 import { Character, type CharState } from "./Character";
 import { Avatar } from "./Avatar";
 
@@ -16,7 +17,7 @@ import { Avatar } from "./Avatar";
    buttons. Hand-offs switch to the right teammate in one tap.
    ===================================================================== */
 
-type Turn = { role: "user"; text: string } | { role: "agent"; agent: TeamId; reply: Reply } | { role: "switch"; from: TeamId; to: TeamId };
+type Turn = { role: "user"; text: string } | { role: "agent"; agent: TeamId; reply: Reply; key?: string; upgraded?: boolean } | { role: "switch"; from: TeamId; to: TeamId };
 
 export const MODE_LABEL: Record<string, string> = {
   device: "From your data · on your device",
@@ -24,6 +25,8 @@ export const MODE_LABEL: Record<string, string> = {
   demo: "Demo · OVEREO's content",
   fallback: "On this device · live brain unavailable",
   guarded: "Kept within OVEREO's rules",
+  instant: "Instant · from OVEREO's guides · getting more detail…",
+  guides: "From OVEREO's checked guides",
 };
 
 export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: () => void }) {
@@ -33,6 +36,8 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
   const [q, setQ] = useState("");
   const [state, setState] = useState<CharState>("idle");
   const busy = state === "thinking";
+  const convId = useRef(Math.random().toString(36).slice(2));
+  const inflight = useRef(false);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
@@ -48,7 +53,8 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
 
   const send = async (text: string, deeper = false) => {
     const t = text.trim();
-    if (!t || busy) return;
+    if (!t || busy || inflight.current) return;
+    inflight.current = true;
     setQ("");
     // whose job is this question? the right teammate steps in
     const who = deeper ? agentId : routeTo(t, agentId);
@@ -62,8 +68,22 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
       .filter((x) => x.role === "user" || x.agent === who)
       .map((x) => (x.role === "user" ? { role: "user" as const, content: x.text } : { role: "assistant" as const, content: x.reply.text }))
       .slice(-8);
-    const reply = await talk(who, history, { deeper });
-    setTurns((x) => [...x, { role: "agent", agent: who, reply }]);
+    const key = Math.random().toString(36).slice(2);
+    let shown = false;
+    const reply = await talk(who, history, {
+      deeper,
+      onInstant: (r) => {
+        shown = true;
+        setTurns((x) => [...x, { role: "agent", agent: who, reply: r, key }]);
+        setState("speaking");
+      },
+    });
+    setTurns((x) => (shown ? x.map((t) => (t.role === "agent" && t.key === key ? { ...t, reply: reply.mode === "live" ? reply : { ...t.reply, mode: reply.mode === "guarded" ? "guarded" : "guides", note: reply.note }, upgraded: reply.mode === "live" } : t)) : [...x, { role: "agent", agent: who, reply }]));
+    inflight.current = false;
+    saveChat(convId.current, "agent", t, [
+      { id: key + "q", role: "user", text: t },
+      { id: key + "a", role: "assistant", agent: who, text: reply.text, meta: { mode: reply.mode } },
+    ]);
     setState("speaking");
     setTimeout(() => setState((s) => (s === "speaking" ? "idle" : s)), 1800);
   };
@@ -115,7 +135,7 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
                     {teamById(t.agent)!.name}
                   </span>
                 )}
-                <AgentBubble reply={t.reply} onHandoff={(id) => setAgentId(id)} onDeeper={() => lastUser && void send(lastUser.text, true)} />
+                <AgentBubble reply={t.reply} upgraded={t.upgraded} onHandoff={(id) => setAgentId(id)} onDeeper={() => lastUser && void send(lastUser.text, true)} />
               </div>
             ),
           )}
@@ -162,14 +182,14 @@ function SwitchNote({ from, to }: { from: TeamId; to: TeamId }) {
   );
 }
 
-export function AgentBubble({ reply, onHandoff, onDeeper }: { reply: Reply; onHandoff?: (id: TeamId) => void; onDeeper?: () => void }) {
+export function AgentBubble({ reply, onHandoff, onDeeper, upgraded }: { reply: Reply; onHandoff?: (id: TeamId) => void; onDeeper?: () => void; upgraded?: boolean }) {
   return (
-    <div className={`ca mode-${reply.mode}`}>
+    <div className={`ca mode-${reply.mode} ${upgraded ? "is-upgraded" : ""}`}>
       <div className="ca-text">
         {reply.text.split(/\n+/).map((l, i) => (/^\s*[-•*]\s/.test(l) ? <li key={i}>{l.replace(/^\s*[-•*]\s*/, "")}</li> : <p key={i}>{l}</p>))}
       </div>
       <div className="ca-meta">
-        <span className={`ca-mode ${reply.mode}`}>{MODE_LABEL[reply.mode]}</span>
+        <span className={`ca-mode ${reply.mode}`}>{MODE_LABEL[reply.mode]}{upgraded ? " · updated with more detail ✓" : ""}</span>
         {reply.flags.unverified.length > 0 && (
           <span className="ca-flag" title="A sentence with these figures was removed: they aren't in OVEREO's sources or your data">
             <Icon name="alert" size={12} /> Figure check: removed {reply.flags.unverified.join(", ")} — not in OVEREO's sources

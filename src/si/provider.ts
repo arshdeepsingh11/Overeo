@@ -9,7 +9,8 @@ import { think, factsFor } from "../personal/mind";
 import type { MindAnswer } from "../personal/mind/answer";
 import { askLive, LIVE_ENDPOINT, REASON, coolDown, cooling } from "../personal/mind/live";
 import { pickAgent } from "../agents/client";
-import { teamById } from "../agents/team";
+import { teamById, type TeamId } from "../agents/team";
+import { compose, prepare } from "../agents/engine";
 
 /* ------------------------------------------------------------------ *
  * Provider — who answers.
@@ -99,25 +100,32 @@ const inPortal = () => typeof location !== "undefined" && /^\/app(\/|$)/.test(lo
 /**
  * Answer a question. `onText` receives streamed text (live answers).
  */
+export interface AskHooks {
+  /** the agent who takes the question — known instantly, before any answer */
+  onAgent?: (agentId: string | null) => void;
+  /** an instant answer from the device while the live brain adds detail */
+  onInstant?: (a: SIAnswer) => void;
+}
+
 export async function ask(
   q: string,
   ctx: SIContext,
   history: SIMessage[],
   onText: (t: string) => void,
   signal?: AbortSignal,
+  hooks: AskHooks = {},
 ): Promise<{ answer: SIAnswer; remote: boolean }> {
   const sp = space.get();
   if (inPortal() && sp.ready) {
     // the agent whose job this is answers (and its persona guides the live brain)
-    const r = await askPersonal(q, ctx, history, onText, signal);
-    return r;
+    return askPersonal(q, ctx, history, onText, signal, hooks);
   }
   return askDemo(q, ctx, history, onText, signal);
 }
 
 /* ------------------------------ her space ------------------------------ */
 
-async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], onText: (t: string) => void, signal?: AbortSignal): Promise<{ answer: SIAnswer; remote: boolean }> {
+async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], onText: (t: string) => void, signal?: AbortSignal, hooks: AskHooks = {}): Promise<{ answer: SIAnswer; remote: boolean }> {
   const sp = space.get();
   const explain = raw.match(/^explain more(?: about)?:\s*(.+)$/i);
   const q = explain ? explain[1] : raw;
@@ -125,6 +133,7 @@ async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], on
   const agentId = u.intent === "emergency" ? null : pickAgent(q, u.intent);
   const agent = agentId ? teamById(agentId) : undefined;
   const tag = <T extends { answer: SIAnswer; remote: boolean }>(r: T): T => ({ ...r, answer: { ...r.answer, agent: agent?.id } });
+  hooks.onAgent?.(agent?.id ?? null);
   if (u.intent !== "general") noteTopic(u.intent);
   const records = m.engagement.total;
   const personalise = ctx.useProfile && sp.account?.consent.personalise !== false;
@@ -180,6 +189,23 @@ async function askPersonal(raw: string, ctx: SIContext, history: SIMessage[], on
     };
   };
   if (!LIVE_ENDPOINT) return fallback("not-configured");
+
+  // answer straight away from the device; the live brain adds detail after
+  if (hooks.onInstant && !cooling()) {
+    let now: SIAnswer | null = a ? fromMind(a, q, records) : null;
+    // the agent's own knowledge (OVEREO's checked guides) when her data has nothing to say
+    if (!now && agent) {
+      const p = prepare(agent.id as TeamId, q, personalise ? factsFor(m, u) : []);
+      const text = p.guard.ok ? compose(p) : "";
+      if (text && !text.startsWith("That isn't in what I know yet"))
+        now = { title: agent.name + " · " + agent.title, summary: text, used: p.sources.map((x) => x.source).slice(0, 3), source: "engine", intent: u.intent, question: q, why: [] };
+    }
+    if (!now) {
+      const g = site();
+      if (!g.title.startsWith("Let me point") && !g.effects?.length) now = { ...g, source: "engine" };
+    }
+    if (now) hooks.onInstant({ ...now, agent: agent?.id, limits: undefined, refining: true });
+  }
 
   const r = await askLive({
     question: q,
