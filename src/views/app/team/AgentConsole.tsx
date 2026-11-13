@@ -7,8 +7,9 @@ import { navigate } from "../../../core/routes";
 import { teamById, type TeamId } from "../../../agents/team";
 import { routeTo, talk, type Reply } from "../../../agents/client";
 import { logChat as saveChat } from "../../../cloud/sync";
-import { Character, type CharState } from "./Character";
+import type { CharState } from "./Character";
 import { Avatar } from "./Avatar";
+import { AgentStage } from "./AgentStage";
 
 /* =====================================================================
    Agent console — chat with one teammate.
@@ -40,6 +41,14 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
   const inflight = useRef(false);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const m = matchMedia("(max-width: 720px), (max-height: 520px)");
+    const f = () => setNarrow(m.matches);
+    f();
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
 
   useEffect(() => {
     input.current?.focus();
@@ -92,9 +101,9 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
 
   return (
     <div className="asheet-root" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="asheet console" role="dialog" aria-modal="true" aria-label={`Chat with ${agent.name}`} style={{ ["--h" as string]: agent.hue }}>
+      <div className={`asheet console ${narrow ? "" : "has-stage"}`} role="dialog" aria-modal="true" aria-label={`Chat with ${agent.name}`} style={{ ["--h" as string]: agent.hue }}>
         <div className="console-head">
-          <Avatar agent={agent} state={state} size={64} />
+          {narrow && <Avatar agent={agent} state={state} size={58} />}
           <div className="console-who">
             <b>{agent.name}</b>
             <span>{agent.title}</span>
@@ -105,6 +114,9 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
           </button>
         </div>
 
+        <div className="console-body">
+        {!narrow && <AgentStage agent={agentId} state={state} size={160} roster={false} />}
+        <div className="console-main">
         <div className="console-list" ref={list} aria-live="polite">
           {!turns.length && (
             <div className="console-intro">
@@ -163,6 +175,8 @@ export function AgentConsole({ initial, onClose }: { initial: TeamId; onClose: (
             <Icon name="send" size={16} />
           </button>
         </form>
+        </div>
+        </div>
         <p className="console-foot faint small">Educational, not a diagnosis · in an emergency call your local emergency number</p>
       </div>
     </div>
@@ -174,7 +188,7 @@ function SwitchNote({ from, to }: { from: TeamId; to: TeamId }) {
   const b = teamById(to)!;
   return (
     <div className="ca-switch" role="status" style={{ ["--h" as string]: b.hue }}>
-      <Character agent={b} size={30} label={false} state="handoff" />
+      <Avatar agent={b} size={34} still label={false} />
       <span>
         <b>{b.name}</b> took this one — {b.title.toLowerCase()} is {b.name}'s job. <span className="faint">({a.name} passed it on.)</span>
       </span>

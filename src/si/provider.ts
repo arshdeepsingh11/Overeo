@@ -120,7 +120,7 @@ export async function ask(
     // the agent whose job this is answers (and its persona guides the live brain)
     return askPersonal(q, ctx, history, onText, signal, hooks);
   }
-  return askDemo(q, ctx, history, onText, signal);
+  return askDemo(q, ctx, history, onText, signal, hooks);
 }
 
 /* ------------------------------ her space ------------------------------ */
@@ -247,9 +247,14 @@ function withExplain(a: SIAnswer): SIAnswer {
 
 /* ------------------------------ public demo ------------------------------ */
 
-async function askDemo(q: string, ctx: SIContext, history: SIMessage[], onText: (t: string) => void, signal?: AbortSignal): Promise<{ answer: SIAnswer; remote: boolean }> {
-  const local = { ...localAnswer(q, ctx), source: "engine" as const };
-  const isCommand = !!local.effects?.length;
+async function askDemo(q: string, ctx: SIContext, history: SIMessage[], onText: (t: string) => void, signal?: AbortSignal, hooks: AskHooks = {}): Promise<{ answer: SIAnswer; remote: boolean }> {
+  const site = localAnswer(q, ctx);
+  const isCommand = !!site.effects?.length;
+  // the agent whose job this is takes the question (not for emergencies or "dark mode"-style commands)
+  const agentId = isCommand || site.tone === "alert" ? null : pickAgent(q);
+  const agent = agentId ? teamById(agentId) : undefined;
+  hooks.onAgent?.(agent?.id ?? null);
+  const local: SIAnswer = { ...site, source: "engine", agent: agent?.id };
   if (!LIVE_ENDPOINT || isCommand || local.tone === "alert") return { answer: local, remote: false };
   const fallback = (reason: string) => ({
     answer: { ...local, limits: [local.limits, `${REASON[reason] ?? REASON.upstream} — answered on this device.`].filter(Boolean).join(" ") },
@@ -257,6 +262,8 @@ async function askDemo(q: string, ctx: SIContext, history: SIMessage[], onText: 
   });
   if (typeof navigator !== "undefined" && navigator.onLine === false) return fallback("offline");
   if (cooling()) return fallback("upstream");
+  // answer straight away from OVEREO's own content; the live brain adds detail after
+  if (hooks.onInstant && !local.title.startsWith("Let me point")) hooks.onInstant({ ...local, refining: true });
   try {
     const res = await fetch(LIVE_ENDPOINT, {
       method: "POST",
@@ -264,6 +271,7 @@ async function askDemo(q: string, ctx: SIContext, history: SIMessage[], onText: 
       body: JSON.stringify({
         messages: [...history.slice(-8).map((m) => ({ role: m.role === "si" ? "assistant" : "user", content: m.role === "si" ? (m.answer?.summary ?? m.text) : m.text })), { role: "user", content: q }],
         context: contextPayload(ctx),
+        persona: agent ? { name: agent.name, title: agent.title, briefing: agent.briefing } : undefined,
       }),
       signal,
     });

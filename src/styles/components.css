@@ -2753,3 +2753,251 @@ span.spop-src {
   .si-handover, .si-handover-beam::after, .si-agent.is-working small, .si-a.is-upgraded { animation: none; }
   .si-agent.is-working small { -webkit-text-fill-color: currentColor; }
 }
+
+/* ===================== the agent stage (who is answering) ===================== */
+.si-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 18px;
+}
+.si-col {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.si-panel:has(.si-body) {
+  width: min(1120px, 100%);
+}
+.astage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 12px 14px;
+  margin-top: 10px;
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 70% at 50% 100%, hsl(var(--h) 90% 88% / 0.55), transparent 65%),
+    linear-gradient(180deg, hsl(var(--h) 60% 98% / 0.6), hsl(var(--h) 50% 94% / 0.35));
+  border: 1px solid hsl(var(--h) 60% 85% / 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: background 0.6s ease, border-color 0.6s ease;
+  overflow: hidden;
+  min-height: 0;
+}
+.astage-char {
+  position: relative;
+  display: grid;
+  place-items: end center;
+}
+.astage-slot {
+  grid-area: 1 / 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.astage-slot.is-here {
+  animation: stIn 0.75s var(--ease-spring, cubic-bezier(0.2, 0.9, 0.25, 1.15)) both;
+}
+.astage-slot.is-leaving {
+  animation: stOut 0.65s ease-in both;
+  pointer-events: none;
+}
+@keyframes stIn {
+  from { opacity: 0; transform: translateY(26px) scale(0.86); filter: blur(6px) brightness(1.6); clip-path: inset(100% 0 0 0); }
+  60% { clip-path: inset(0 0 0 0); }
+}
+@keyframes stOut {
+  to { opacity: 0; transform: translateX(-38%) scale(0.7); filter: blur(8px) saturate(0.4); }
+}
+.astage-floor {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 78%;
+  height: 26px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, hsl(var(--h) 100% 80% / 0.75), hsl(var(--h) 90% 75% / 0.2) 60%, transparent);
+  box-shadow: 0 0 0 1px hsl(var(--h) 80% 75% / 0.35);
+  animation: stFloor 3.2s ease-in-out infinite;
+}
+@keyframes stFloor { 50% { transform: translateX(-50%) scale(1.06); opacity: 0.8; } }
+.astage-beam {
+  position: absolute;
+  inset: -20% 22% 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, hsl(var(--h) 100% 85% / 0.85) 40%, hsl(var(--h) 100% 92% / 0.9) 80%, transparent);
+  filter: blur(6px);
+  animation: stBeam 1.2s ease-out both;
+  pointer-events: none;
+}
+@keyframes stBeam {
+  0% { opacity: 0; transform: scaleY(0.2); }
+  25% { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleX(0.3); }
+}
+.astage-info {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.astage-name {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: 0.32em;
+  margin-right: -0.32em;
+  color: hsl(var(--h) 45% 26%);
+  animation: stName 0.6s ease both;
+}
+@keyframes stName { from { opacity: 0; letter-spacing: 0.7em; } }
+.astage-title {
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.astage-state {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--h) 50% 30%);
+  background: hsl(var(--h) 90% 96% / 0.9);
+  border: 1px solid hsl(var(--h) 70% 82%);
+  max-width: 100%;
+}
+.astage-state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--h) 85% 60%);
+  box-shadow: 0 0 0 0 hsl(var(--h) 85% 60% / 0.6);
+  flex: none;
+}
+.astage.st-thinking .astage-state i,
+.astage.st-speaking .astage-state i,
+.astage.st-listening .astage-state i,
+.astage.st-handoff .astage-state i {
+  animation: stDot 1s ease-out infinite;
+}
+@keyframes stDot { to { box-shadow: 0 0 0 7px hsl(var(--h) 85% 60% / 0); } }
+.astage-does {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--fg-2);
+  max-width: 24ch;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  animation: stName 0.6s ease both;
+}
+.astage-team {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.astage-mini {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: hsl(var(--h) 80% 96% / 0.7);
+  border: 1px solid transparent;
+  opacity: 0.55;
+  filter: saturate(0.6);
+  transition: all 0.4s ease;
+}
+.astage-mini.on {
+  opacity: 1;
+  filter: none;
+  border-color: hsl(var(--h) 75% 70%);
+  box-shadow: 0 0 0 3px hsl(var(--h) 90% 85% / 0.6);
+  transform: scale(1.08);
+}
+/* phones: a slim bar above the chat */
+.astage.is-compact {
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 12px 6px 6px;
+  margin: 8px 0 0;
+  border-radius: 22px;
+  gap: 10px;
+}
+.astage.is-compact .astage-info {
+  justify-items: start;
+  text-align: left;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+}
+.astage.is-compact .astage-name {
+  font-size: 16px;
+  letter-spacing: 0.2em;
+  margin-right: 0;
+}
+.astage.is-compact .astage-title {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.astage.is-compact .astage-state {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding: 3px 10px;
+  font-size: 11px;
+}
+.astage.is-compact .astage-floor {
+  display: none;
+}
+@media (max-width: 760px), (max-height: 520px) {
+  .si-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+  }
+}
+/* reduced motion: no flying in, just a soft fade */
+@media (prefers-reduced-motion: reduce) {
+  .astage-slot.is-here,
+  .astage-slot.is-leaving,
+  .astage-name {
+    animation-duration: 0.01ms;
+  }
+  .astage-beam,
+  .astage-floor {
+    animation: none;
+  }
+}
+.dark .astage-name,
+[data-theme="dark"] .astage-name {
+  color: hsl(var(--h) 80% 86%);
+}
+.dark .astage-state,
+[data-theme="dark"] .astage-state {
+  color: hsl(var(--h) 80% 88%);
+  background: hsl(var(--h) 40% 20% / 0.7);
+  border-color: hsl(var(--h) 40% 40%);
+}
+[data-theme="dark"] .astage {
+  background:
+    radial-gradient(120% 70% at 50% 100%, hsl(var(--h) 70% 45% / 0.35), transparent 65%),
+    linear-gradient(180deg, hsl(var(--h) 30% 22% / 0.5), hsl(var(--h) 30% 14% / 0.4));
+  border-color: hsl(var(--h) 40% 40% / 0.5);
+  box-shadow: none;
+}

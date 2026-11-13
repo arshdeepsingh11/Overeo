@@ -19,9 +19,11 @@ import { runMindAction } from "../personal/mind/act";
 import { model } from "../personal/mind";
 import type { MindAction } from "../personal/mind/answer";
 import { sureLabel } from "../personal/mind/stats";
-import { Character } from "../views/app/team/Character";
+import { Avatar } from "../views/app/team/Avatar";
+import { AgentStage } from "../views/app/team/AgentStage";
+import type { CharState } from "../views/app/team/Character";
 import { logChat as saveChat } from "../cloud/sync";
-import { teamById } from "../agents/team";
+import { teamById, type TeamId } from "../agents/team";
 
 /* =====================================================================
    Overeo SI — Symbiotic Intelligence.
@@ -68,6 +70,16 @@ export function OvereoSI() {
   const abort = useRef<AbortController | null>(null);
   const history = useRef<string[]>([]);
   const histIdx = useRef(-1);
+  // the agent on stage "speaks" for a moment after each answer arrives
+  const [speakTill, setSpeakTill] = useState(0);
+  const [, rerender] = useState(0);
+  const narrow = useNarrow();
+  const talkFor = (a: SIAnswer) => setSpeakTill(Date.now() + Math.min(6500, Math.max(1800, a.summary.split(/\s+/).length * 60)));
+  useEffect(() => {
+    if (!speakTill) return;
+    const t = setTimeout(() => rerender((n) => n + 1), Math.max(0, speakTill - Date.now()) + 30);
+    return () => clearTimeout(t);
+  }, [speakTill]);
 
   // open/close lifecycle
   useEffect(() => {
@@ -153,13 +165,15 @@ export function OvereoSI() {
             onAgent: (agent) => setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, agent } : x))),
             onInstant: (a) => {
               instant = true;
+              talkFor(a);
               setOrb("idle");
               setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, answer: a, status: "done", remote: false } : x)));
             },
           },
         );
+        talkFor(answer);
         if (instant) {
-          setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, answer, status: "done", remote: true, upgraded: remote } : x)));
+          setMsgs((m) => m.map((x) => (x.id === siMsg.id ? { ...x, answer, status: "done", remote: true, upgraded: remote, kept: !remote } : x)));
           logChat(q, answer);
           return;
         }
@@ -231,6 +245,11 @@ export function OvereoSI() {
 
   if (!open) return null;
 
+  // who is on stage: the agent answering the latest question (Overeo SI until someone takes one)
+  const lastSi = [...msgs].reverse().find((x) => x.role === "si");
+  const stageAgent = ((lastSi && (lastSi.agent ?? lastSi.answer?.agent)) || "si") as TeamId;
+  const stageState: CharState =
+    orb === "listening" ? "listening" : busy && lastSi && !lastSi.answer ? "thinking" : (voiceOut && orb === "speaking") || Date.now() < speakTill ? "speaking" : input.trim() ? "listening" : "idle";
   const secLabel = portal ? "Your space" : labelFor(origin);
   const sugg = portal ? portalSuggestions() : suggestionsFor(origin);
   const empty = msgs.length === 0;
@@ -277,6 +296,9 @@ export function OvereoSI() {
           </div>
         </header>
 
+        <div className="si-body">
+        <AgentStage agent={stageAgent} state={stageState} compact={narrow} />
+        <div className="si-col">
         <div className="si-context" aria-label="Context Overeo SI may use">
           <span className="faint small">Using</span>
           <span className="chip on-soft">
@@ -296,11 +318,13 @@ export function OvereoSI() {
         <div ref={scroller} className="si-scroll">
           {empty ? (
             <div className="si-empty">
-              <Orb state={orb} level={level} size={230} />
               <h2 className="title-md si-greet">
                 {GREET[Math.floor((Date.now() / 60000) % GREET.length)]}
               </h2>
               <p className="muted small" style={{ margin: 0 }}>
+                Ask anything. The agent whose job it is steps in and answers, and you'll see her take over.
+              </p>
+              <p className="faint small" style={{ margin: 0 }}>
                 Educational, not a diagnosis. I show what I used every time.
               </p>
             </div>
@@ -369,6 +393,8 @@ export function OvereoSI() {
             <Icon name="send" size={18} />
           </button>
         </form>
+        </div>
+        </div>
         <div className="si-foot faint">
           <span>
             <span className="kbd">O</span> open · hold <span className="kbd">O</span> talk · <span className="kbd">Esc</span> close
@@ -378,6 +404,19 @@ export function OvereoSI() {
       </div>
     </div>
   );
+}
+
+/** phones and narrow windows get the slim stage bar */
+function useNarrow() {
+  const [n, setN] = useState(false);
+  useEffect(() => {
+    const m = matchMedia("(max-width: 760px), (max-height: 520px)");
+    const f = () => setN(m.matches);
+    f();
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return n;
 }
 
 /* --------------------------------- reply --------------------------------- */
@@ -428,9 +467,9 @@ function SIReply({ msg, onAsk, prevAgent }: { msg: SIMessage; onAsk: (t: string)
   const from = prevAgent && who && prevAgent !== who.id ? teamById(prevAgent) : undefined;
   const handover = from && who && (
     <div className="si-handover" role="status" style={{ "--h": who.hue, "--h0": from.hue } as CSSProperties}>
-      <Character agent={from} size={26} label={false} state="handoff" />
+      <Avatar agent={from} size={30} still label={false} />
       <span className="si-handover-beam" aria-hidden="true" />
-      <Character agent={who} size={30} label={false} state="speaking" />
+      <Avatar agent={who} size={34} still label={false} />
       <span>
         <b>{who.name}</b> takes this — {who.title.toLowerCase()} is {who.name}'s job
       </span>
@@ -442,9 +481,9 @@ function SIReply({ msg, onAsk, prevAgent }: { msg: SIMessage; onAsk: (t: string)
         {handover}
         {who && !msg.text && (
           <div className="si-agent is-working" style={{ "--h": who.hue } as CSSProperties} data-agent={who.id}>
-            <Character agent={who} size={34} label={false} state="thinking" />
+            <Avatar agent={who} size={36} still state="thinking" label={false} />
             <span>
-              <b>{who.name}</b> · {who.title}
+              <span><b>{who.name}</b> · {who.title}</span>
               <small>Looking at your data and OVEREO's guides…</small>
             </span>
           </div>
@@ -472,10 +511,10 @@ function SIReply({ msg, onAsk, prevAgent }: { msg: SIMessage; onAsk: (t: string)
         const ag = teamById(a.agent)!;
         return (
           <div className="si-agent" style={{ "--h": ag.hue } as CSSProperties} data-agent={ag.id}>
-            <Character agent={ag} size={34} label={false} state={done ? "idle" : "speaking"} />
+            <Avatar agent={ag} size={36} still label={false} />
             <span>
-              <b>{ag.name}</b> · {ag.title}
-              <small>{a.refining ? "Instant answer · getting more detail…" : msg.upgraded ? "Updated with more detail ✓" : "Answering — this is their job"}</small>
+              <span><b>{ag.name}</b> · {ag.title}</span>
+              <small>{a.refining ? "Instant answer · getting more detail…" : msg.upgraded ? "Updated with more detail ✓" : msg.kept && a.limits ? a.limits : "Answering — this is their job"}</small>
             </span>
           </div>
         );
