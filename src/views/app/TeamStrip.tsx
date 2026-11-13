@@ -58,7 +58,7 @@ export function TeamStrip() {
           const off = a.id !== "si" && agents[a.id as keyof typeof agents] && !agents[a.id as keyof typeof agents].enabled;
           return (
             <button key={a.id} className={`tstrip-a ${off ? "off" : ""}`} style={{ "--h": a.hue, "--i": i } as CSSProperties} onClick={() => openSI(a.id === "si" ? null : ASK[a.id])} aria-label={`${a.name}, ${a.title}: ${a.id === "si" ? "ask anything" : status(a.id)}`}>
-              <Avatar agent={a} size={64} label={false} state={off ? "waiting" : "idle"} />
+              <Avatar agent={a} size={78} frame="full" label={false} state={off ? "waiting" : "idle"} />
               <b>{a.name}</b>
               <span>{a.id === "si" ? "Ask anything" : status(a.id)}</span>
             </button>

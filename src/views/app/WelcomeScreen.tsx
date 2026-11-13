@@ -14,7 +14,7 @@ import type { Goal, Lang, LifeStage } from "../../personal/types";
 import { Stepper, Switch, toLocalInput } from "./kit";
 import { updateCloudProfile, useCloud } from "../../cloud/account";
 import { SPECIALISTS } from "../../agents/team";
-import { Character } from "./team/Character";
+import { Avatar } from "./team/Avatar";
 
 /* =====================================================================
    Sign in + first-time setup (about a minute). From the first answer,
@@ -102,7 +102,7 @@ export function WelcomeScreen() {
       <div className="ob-team" aria-hidden="true">
         {SPECIALISTS.map((a, i) => (
           <span key={a.id} style={{ ["--i" as string]: i } as React.CSSProperties}>
-            <Character agent={a} size={36} label={false} />
+            <Avatar agent={a} size={44} still label={false} />
           </span>
         ))}
       </div>

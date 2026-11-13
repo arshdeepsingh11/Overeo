@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../ui/Icon";
-import { Character } from "../views/app/team/Character";
+import { Avatar } from "../views/app/team/Avatar";
 import { Switch } from "../views/app/kit";
 import { teamById } from "../agents/team";
 import { echo, useEcho } from "./store";
@@ -80,7 +80,7 @@ function EchoButton() {
       {open && (
         <div className="echo-panel" role="dialog" aria-label="ECHO translator">
           <div className="echo-head">
-            <Character agent={agent} size={40} label={false} state={status === "working" ? "thinking" : "idle"} />
+            <Avatar agent={agent} size={44} label={false} state={status === "working" ? "thinking" : "idle"} />
             <div>
               <b>ECHO</b>
               <span className="faint small">Your translator</span>
@@ -115,7 +115,7 @@ function EchoButton() {
         </div>
       )}
       <button className={`echo-fab ${page ? "is-on" : ""}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={page ? `ECHO: page shown in ${L?.name}. Open translator` : "Open ECHO translator"}>
-        <Character agent={agent} size={30} label={false} state={status === "working" ? "thinking" : "idle"} />
+        <Avatar agent={agent} size={34} still label={false} state={status === "working" ? "thinking" : "idle"} />
         <span>{page ? (L?.native ?? lang) : "Translate"}</span>
       </button>
     </div>
